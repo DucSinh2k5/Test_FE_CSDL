@@ -694,11 +694,12 @@
                                 <th>ID</th>
                                 <th>Khách</th>
                                 <th>Sản phẩm</th>
-                                <th>SL</th>
-                                <th>Giá</th>
-                                <th>Tổng</th>
+                                <th>Size</th>
+                                <th>Số lượng</th>
+                                <th>Đơn giá</th>
+                                <th>Số tiền</th>
                                 <th>Ngày</th>
-                                <th>Hành động</th>
+                                <th>Thao tác</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -721,17 +722,138 @@
     <script>
         // ---------- SAMPLE DATA & STATE ----------
         let products = [
-            { id: 1, name: "Áo thun nam", brand: "Louis Vuitton", category: "Thời trang", price: 120000, stock: 10, image: "ao_thun.jpg" },
-            { id: 2, name: "Quần jean", brand: "Routine", category: "Thời trang", price: 350000, stock: 8, image: "quan_jean.jpg" },
-            { id: 3, name: "Giày sneaker", brand: "MLB", category: "Giày dép", price: 450000, stock: 5, image: "giay_sneaker.jpg" },
-            { id: 4, name: "Mũ lưỡi trai", brand: "MLB", category: "Phụ kiện", price: 150000, stock: 12, image: "mu_luoi_trai.jpg" },
-            { id: 5, name: "Áo khoác nam", brand: "Zara", category: "Thời trang", price: 550000, stock: 7, image: "ao_khoac.jpg" },
-            { id: 6, name: "Túi xách tay", brand: "Gucci", category: "Phụ kiện", price: 950000, stock: 3, image: "tui_xach.jpg" },
-            { id: 7, name: "Đồng hồ nam", brand: "Tissot", category: "Phụ kiện", price: 1250000, stock: 4, image: "dong_ho.jpg" },
-            { id: 8, name: "Tai nghe Bluetooth", brand: "Sony", category: "Điện tử", price: 780000, stock: 6, image: "tai_nghe.jpg" },
-            { id: 9, name: "Balo laptop", brand: "Xiaomi", category: "Phụ kiện", price: 320000, stock: 9, image: "balo.jpg" },
-            { id: 10, name: "Áo sơ mi nữ", brand: "An Phước", category: "Thời trang", price: 250000, stock: 15, image: "ao_somi.jpg" }
+            {
+                id: 1,
+                name: "Áo thun nam",
+                brand: "Louis Vuitton",
+                category: "Thời trang",
+                price: 120000,
+                stock: 10,
+                image: "ao_thun.jpg",
+                description: "Áo thun nam cao cấp, chất vải mềm mịn, thoáng mát, phù hợp cho mùa hè.",
+                size: "M, L, XL",
+                color: "Đen",
+                material: "Cotton"
+            },
+            {
+                id: 2,
+                name: "Quần jean",
+                brand: "Routine",
+                category: "Thời trang",
+                price: 350000,
+                stock: 8,
+                image: "quan_jean.jpg",
+                description: "Quần jean form slim-fit năng động, dễ phối đồ.",
+                size: "28, 30, 32, 34",
+                color: "Xanh đậm",
+                material: "Denim"
+            },
+            {
+                id: 3,
+                name: "Giày sneaker",
+                brand: "MLB",
+                category: "Giày dép",
+                price: 450000,
+                stock: 5,
+                image: "giay_sneaker.jpg",
+                description: "Giày sneaker trẻ trung, đế cao su bền chắc, phù hợp cả nam và nữ.",
+                size: "38-43",
+                color: "Trắng",
+                material: "Da tổng hợp"
+            },
+            {
+                id: 4,
+                name: "Mũ lưỡi trai",
+                brand: "MLB",
+                category: "Phụ kiện",
+                price: 150000,
+                stock: 12,
+                image: "mu_luoi_trai.jpg",
+                description: "Mũ lưỡi trai MLB phong cách thể thao, có thể điều chỉnh kích cỡ.",
+                size: "Free size",
+                color: "Đen",
+                material: "Vải cotton"
+            },
+            {
+                id: 5,
+                name: "Áo khoác nam",
+                brand: "Zara",
+                category: "Thời trang",
+                price: 550000,
+                stock: 7,
+                image: "ao_khoac.jpg",
+                description: "Áo khoác thời trang nam chống gió, giữ ấm tốt.",
+                size: "M, L, XL",
+                color: "Xanh rêu",
+                material: "Polyester"
+            },
+            {
+                id: 6,
+                name: "Túi xách tay",
+                brand: "Gucci",
+                category: "Phụ kiện",
+                price: 950000,
+                stock: 3,
+                image: "tui_xach.jpg",
+                description: "Túi xách nữ thời trang Gucci sang trọng, phù hợp đi chơi và dự tiệc.",
+                size: "25x30cm",
+                color: "Nâu",
+                material: "Da thật"
+            },
+            {
+                id: 7,
+                name: "Đồng hồ nam",
+                brand: "Tissot",
+                category: "Phụ kiện",
+                price: 1250000,
+                stock: 4,
+                image: "dong_ho.jpg",
+                description: "Đồng hồ Tissot nam dây da, chống nước, thiết kế sang trọng.",
+                size: "Đường kính 42mm",
+                color: "Bạc",
+                material: "Thép không gỉ & da"
+            },
+            {
+                id: 8,
+                name: "Tai nghe Bluetooth",
+                brand: "Sony",
+                category: "Điện tử",
+                price: 780000,
+                stock: 6,
+                image: "tai_nghe.jpg",
+                description: "Tai nghe Bluetooth chống ồn, pin 12h, âm thanh trung thực.",
+                size: "Nhỏ gọn",
+                color: "Đen",
+                material: "Nhựa cao cấp"
+            },
+            {
+                id: 9,
+                name: "Balo laptop",
+                brand: "Xiaomi",
+                category: "Phụ kiện",
+                price: 320000,
+                stock: 9,
+                image: "balo.jpg",
+                description: "Balo chống nước, có ngăn riêng cho laptop 15 inch.",
+                size: "45x30x15cm",
+                color: "Xám",
+                material: "Vải Oxford"
+            },
+            {
+                id: 10,
+                name: "Áo sơ mi nữ",
+                brand: "An Phước",
+                category: "Thời trang",
+                price: 250000,
+                stock: 15,
+                image: "ao_somi.jpg",
+                description: "Áo sơ mi nữ công sở thanh lịch, vải mềm, dễ ủi.",
+                size: "S, M, L",
+                color: "Trắng",
+                material: "Cotton lụa"
+            }
         ];
+
 
         // customers, orders, carts
         let customers = [
@@ -782,10 +904,10 @@
       <div class="brand">${p.brand || ''}</div>
       <div class="muted">${p.category || ''}</div>
       <div style="margin-top:6px;font-size:13px;color:#2d6a4f;">Tồn kho: ${p.stock}</div>
-      <div style="margin-top:8px;display:flex;gap:8px;justify-content:center;">
-        <button onclick="showProductInfo(${p.id})">Thông tin</button>
-        <button onclick="promptAddToCart(${p.id})">Thêm vào giỏ</button>
-        <button onclick="promptBuyNow(${p.id})" style=\"background:#0ea5a4;color:white\">Mua</button>
+        <div style="margin-top:8px;display:flex;gap:6px;justify-content:center;">
+        <button style="flex: 1;" onclick="showProductInfo(${p.id})">Thông tin</button>
+        <button style="flex: 1;" onclick="showPurchaseOptions(${p.id}, 'cart')">Thêm vào giỏ</button>
+        <button style="flex: 1; background:#0ea5a4;color:white" onclick="showPurchaseOptions(${p.id}, 'buy')">Mua</button>
       </div>
     `;
                 grid.appendChild(card);
@@ -805,16 +927,21 @@
 
         function showProductInfo(id) {
             const p = products.find(x => x.id === id); if (!p) return; showModal(`
-            <h3>${p.name}</h3>
-            <img src="${p.image || 'https://via.placeholder.com/300'}" style="width:100%;height:200px;object-fit:cover;border-radius:6px">
-            <p><strong>Thương hiệu:</strong> ${p.brand || '-'}</p>
-            <p><strong>Loại:</strong> ${p.category || '-'}</p>
-            <p><strong>Giá:</strong> ${formatCurrency(p.price)} VNĐ</p>
-            <p><strong>Tồn kho:</strong> ${p.stock}</p>
-            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
-              <button onclick="closeModal()">Đóng</button>
-            </div>
-        `);
+            <h3>${p.name}</h3>
+            <img src="${p.image || 'https://via.placeholder.com/300'}" style="width:100%;height:200px;object-fit:cover;border-radius:6px">
+            <p><strong>Mã sản phẩm:</strong> ${p.id}</p>
+            <p><strong>Thương hiệu:</strong> ${p.brand || '-'}</p>
+            <p><strong>Loại:</strong> ${p.category || '-'}</p>
+            <p><strong>Giá:</strong> ${formatCurrency(p.price)} VNĐ</p>
+            <p><strong>Tồn kho:</strong> ${p.stock}</p>
+            <p><strong>Mô tả:</strong> ${p.description || 'Chưa có mô tả'}</p>
+            <p><strong>Kích cỡ:</strong> ${p.size || 'Tùy chọn'}</p>
+            <p><strong>Màu sắc:</strong> ${p.color || 'Đa dạng'}</p>
+            <p><strong>Chất liệu:</strong> ${p.material || 'Không rõ'}</p>
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
+              <button onclick="closeModal()">Đóng</button>
+            </div>
+        `);
         }
 
         function promptAddToCart(productId) {
@@ -869,16 +996,111 @@
             }
             return String(idNum);
         }
+        // Hàm mới để hiển thị modal chọn Size và Số lượng
+        // Hàm mới để hiển thị modal chọn Size và Số lượng
+        // Hàm mới để hiển thị modal chọn Size và Số lượng
+        function showPurchaseOptions(productId, action) {
+            const p = products.find(x => x.id === productId);
+            if (!p) return alert("Không tìm thấy sản phẩm!");
 
-        function addToCart(userId, productId, qty = 1) {
+            // 1. Xử lý options cho Size
+            const sizes = p.size ? p.size.split(',').map(s => s.trim()) : ['One Size'];
+            let sizeOptionsHtml = '';
+            let sizeFieldStyle = 'flex: 1;'; // Mặc định cho flex
+
+            if (sizes.length > 0 && sizes[0] !== 'One Size' && sizes[0] !== 'Free size') {
+                const selectOptions = sizes.map(s => `<option value="${s}">${s}</option>`).join('');
+                sizeOptionsHtml = `
+        <div class="field" style="${sizeFieldStyle}">
+          <label for="modal-size" style="display: block; margin-bottom: 4px; font-weight: 500;">Chọn Size:</label>
+          <select id="modal-size" style="width:100%; padding: 8px; border-radius: 8px; border: 1px solid #e6e9f2; box-sizing: border-box;">
+            ${selectOptions}
+          </select>
+        </div>`;
+            } else {
+                // Nếu không có size, ẩn field size
+                sizeOptionsHtml = `<input type="hidden" id="modal-size" value="${sizes[0]}">`;
+                sizeFieldStyle = 'display: none;'; // Ẩn hẳn ô size
+                /* qtyFieldStyle = 'width: 100%';*/
+            }
+
+            // 2. Tạo HTML cho Modal
+            const modal = document.createElement("div");
+            modal.className = "modal-overlay";
+
+            const actionText = (action === 'cart') ? 'Thêm vào giỏ' : 'Mua ngay';
+
+            modal.innerHTML = `
+        <div class="modal-content" style="max-width: 400px; padding: 20px;">
+          <h3 style="margin-top:0; color: var(--text-color);">${p.name}</h3>
+          <p style="font-weight: 600;">Giá: <span style="color: var(--accent);">${formatCurrency(p.price)} VNĐ</span> / sản phẩm</p>
+          <p style="font-size:14px; color: #777; margin-bottom: 15px;">Tồn kho: ${p.stock}</p>
+          <hr style="margin:12px 0; border: none; border-top: 1px solid #eee;">
+          
+          <form onsubmit="event.preventDefault(); handlePurchaseConfirm(${p.id}, '${action}');">
+            <div style="display:flex; gap: 12px; align-items: flex-start; margin-bottom: 20px;">
+              ${sizeOptionsHtml}
+              <div class="field" style="flex: 1; ${sizeFieldStyle === 'display: none;' ? 'width: 100%;' : ''}">
+                <label for="modal-qty" style="display: block; margin-bottom: 4px; font-weight: 500;">Số lượng:</label>
+                <input id="modal-qty" type="number" value="1" min="1" max="${p.stock}" required 
+     style="width:80px; padding: 8px; border-radius: 8px; border: 1px solid #e6e9f2; text-align:center; box-sizing: border-box;">
+
+              </div>
+            </div>
+            <div style="margin-top:20px; display:flex; justify-content:flex-end; gap: 10px;">
+              <button type="button" class="ghost" onclick="this.closest('.modal-overlay').remove()" 
+                    style="padding: 10px 18px; border-radius: 8px; font-size: 14px;">Hủy</button>
+              <button type="submit" style="background: var(--accent); color: white; padding: 10px 18px; border-radius: 8px; font-size: 14px;">${actionText}</button>
+            </div>
+          </form>
+        </div>
+        `;
+            document.body.appendChild(modal);
+        }
+
+        // Hàm mới để xử lý xác nhận từ Modal
+        function handlePurchaseConfirm(productId, action) {
+            const qty = Number(document.getElementById('modal-qty').value);
+            const sizeEl = document.getElementById('modal-size');
+            const size = sizeEl ? sizeEl.value : 'One Size'; // Lấy size đã chọn
+
+            // Lấy User ID từ ô input cố định
+            let userId = $('current-user-id').value.trim();
+            if (!userId) {
+                alert('Vui lòng nhập "Mã người dùng" (ô bên cạnh ô tìm kiếm) trước khi thêm/mua.');
+                return;
+            }
+            userId = ensureCustomerExists(userId); // Đảm bảo khách hàng tồn tại
+
+            // Kiểm tra tồn kho
+            const p = products.find(x => x.id === productId);
+            if (!p) return alert('Sản phẩm không tồn tại');
+            if (p.stock < qty) return alert('Không đủ tồn kho. Chỉ còn ' + p.stock + '.');
+
+            // Gọi logic
+            if (action === 'cart') {
+                const added = addToCart(userId, productId, qty, size); // Cập nhật addToCart
+                if (added) alert('Đã thêm vào giỏ của người dùng ' + userId);
+            } else if (action === 'buy') {
+                buyNow(userId, productId, qty, size); // Cập nhật buyNow
+                alert('Mua thành công!');
+            }
+
+            // Đóng modal
+            document.querySelector('.modal-overlay').remove();
+        }
+
+        function addToCart(userId, productId, qty = 1, size = 'One Size') {
             const p = products.find(x => x.id === productId);
             if (!p) { alert('Sản phẩm không tồn tại'); return false; }
-            // số lượng đã có trong giỏ của user
+
             if (!carts[userId]) carts[userId] = [];
-            const existing = carts[userId].find(it => it.productId === productId);
+            // Kiểm tra sản phẩm có CÙNG size đã tồn tại chưa
+            const existing = carts[userId].find(it => it.productId === productId && it.size === size);
+
             const inCartQty = existing ? existing.qty : 0;
-            // tổng số sau khi thêm
             const totalDesired = inCartQty + qty;
+
             if (totalDesired > p.stock) {
                 if (p.stock - inCartQty <= 0) {
                     alert('Không thể thêm — đã hết hàng hoặc bạn đã có tối đa trong giỏ.');
@@ -887,11 +1109,16 @@
                 alert('Chỉ còn ' + (p.stock - inCartQty) + ' sản phẩm khả dụng. Vui lòng giảm số lượng.');
                 return false;
             }
-            if (existing) existing.qty = totalDesired; else carts[userId].push({ productId, qty });
+
+            if (existing) {
+                existing.qty = totalDesired;
+            } else {
+                carts[userId].push({ productId, qty, size }); // Thêm size vào đối tượng giỏ hàng
+            }
             return true;
         }
 
-        function buyNow(userId, productId, qty) {
+        function buyNow(userId, productId, qty, size = 'One Size') {
             const p = products.find(x => x.id === productId);
             if (!p) return alert('Sản phẩm không tồn tại');
             if (p.stock < qty) return alert('Không đủ tồn kho');
@@ -899,9 +1126,9 @@
             orderId++;
             const total = p.price * qty;
             const date = new Date().toISOString().slice(0, 10);
-            orders.push({ id: orderId, customerId: Number(userId), productId, qty, total, date });
+            orders.push({ id: orderId, customerId: Number(userId), productId, qty, total, date, size }); // Thêm size vào đơn hàng
             updateSummary(); renderProducts(); renderOrders();
-            alert('Mua thành công — đơn hàng ID: ' + orderId);
+            // alert('Mua thành công — đơn hàng ID: ' + orderId); // Tắt thông báo này vì đã có ở handlePurchaseConfirm
         }
 
         // ---------- CART TAB ----------
@@ -919,22 +1146,58 @@
             const cont = $('cart-list');
             cont.innerHTML = '';
             if (list.length === 0) { cont.innerHTML = '<div>Giỏ rỗng</div>'; return; }
+
             const tbl = document.createElement('table');
-            tbl.innerHTML = `<thead><tr><th>Sản phẩm</th><th>SL</th><th>Giá</th><th>Tổng</th><th>Hành động</th></tr></thead><tbody></tbody>`;
+            tbl.style.width = '100%';
+            tbl.innerHTML = `<thead>
+        <tr>
+            <th>Mã SP</th>
+            <th>Sản phẩm</th>
+            <th>Size</th>
+            <th>Số lượng</th>
+            <th>Đơn giá</th>
+            <th>Số tiền</th>
+            <th>Thao tác</th>
+        </tr>
+    </thead><tbody></tbody>`;
             const tbody = tbl.querySelector('tbody');
-            list.forEach((it, idx) => {
+
+            list.forEach((it) => {
                 const p = products.find(x => x.id === it.productId) || { name: '[không xác định]', price: 0 };
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${p.name}</td><td><input value="${it.qty}" style="width:60px" onchange="changeCartQty('${userId}',${it.productId},this.value)"></td><td>${formatCurrency(p.price)}</td><td>${formatCurrency(p.price * it.qty)}</td><td><button onclick="removeCartItem('${userId}',${it.productId})" style=\"background:#ef4444;color:white\">Xóa</button></td>`;
+                const sizeEsc = (it.size || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                tr.innerHTML = `
+            <td>${p.id}</td>
+            <td>${p.name}</td>
+            <td>${it.size || '-'}</td>
+            <td>
+                <input value="${it.qty}" style="width:60px" 
+                    onchange="changeCartQty('${userId}', ${it.productId}, '${sizeEsc}', this.value)">
+            </td>
+            <td>${formatCurrency(p.price)}</td>
+            <td>${formatCurrency(p.price * it.qty)}</td>
+            <td>
+                <button onclick="removeCartItem('${userId}', ${it.productId}, '${sizeEsc}')" 
+                    style="background:#ef4444;color:white">Xóa</button>
+            </td>
+        `;
                 tbody.appendChild(tr);
             });
+
             cont.appendChild(tbl);
         }
 
-        function changeCartQty(userId, productId, value) {
-            const list = carts[userId]; if (!list) return; const it = list.find(x => x.productId === productId); if (!it) return; it.qty = Math.max(1, Number(value) || 1); renderCartForUser(userId);
+
+        function changeCartQty(userId, productId, size, value) {
+            const list = carts[userId]; if (!list) return;
+            const it = list.find(x => x.productId === productId && String(x.size) === String(size)); // so sánh chính xác cả size
+            if (!it) return;
+            // đảm bảo là số nguyên >=1
+            const newQty = Math.max(1, parseInt(value, 10) || 1);
+            it.qty = newQty;
+            renderCartForUser(userId);
         }
-        function removeCartItem(userId, productId) { if (!confirm('Xóa khỏi giỏ?')) return; carts[userId] = (carts[userId] || []).filter(x => x.productId !== productId); renderCartForUser(userId); }
+
 
         function checkoutCurrentCart() {
             if (!currentCartUser) return alert('Tải giỏ cho 1 người dùng trước'); const list = carts[currentCartUser] || []; if (!list.length) return alert('Giỏ rỗng');
@@ -946,7 +1209,7 @@
                 orderId++;
                 const total = (p ? p.price : 0) * it.qty;
                 const date = new Date().toISOString().slice(0, 10);
-                orders.push({ id: orderId, customerId: Number(currentCartUser), productId: it.productId, qty: it.qty, total, date });
+                orders.push({ id: orderId, customerId: Number(currentCartUser), productId: it.productId, qty: it.qty, total, date, size: it.size });
             });
             // clear cart
             carts[currentCartUser] = [];
@@ -970,7 +1233,7 @@
                 const customer = customers.find(c => c.id === o.customerId) || { name: '[không xác định]' };
                 const product = products.find(p => p.id === o.productId) || { name: '[không xác định]', price: 0 };
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${o.id}</td><td>${customer.name} (id:${o.customerId})</td><td>${product.name}</td><td>${o.qty}</td><td>${formatCurrency(product.price)}</td><td>${formatCurrency(o.total)}</td><td>${o.date}</td><td><button onclick="deleteOrder(${o.id})" style=\"background:#ef4444;color:white\">Xóa</button></td>`;
+                tr.innerHTML = `<td>${o.id}</td><td>${customer.name} (id:${o.customerId})</td><td>${product.name}</td><td>${o.size || '-'}</td><td>${o.qty}</td><td>${formatCurrency(product.price)}</td><td>${formatCurrency(o.total)}</td><td>${o.date}</td><td><button onclick="deleteOrder(${o.id})" style=\"background:#ef4444;color:white\">Xóa</button></td>`;
                 tbody.appendChild(tr);
             });
             $('stat-orders').textContent = orders.length;
@@ -995,7 +1258,7 @@
             products.filter(p => p.name.toLowerCase().includes(q) || p.brand?.toLowerCase().includes(q) || p.category?.toLowerCase().includes(q)).forEach(p => {
                 out.push(`<tr><td>${p.id}</td><td>${p.name}</td><td>${p.brand || '-'}</td><td>${p.category || '-'}</td><td>${formatCurrency(p.price)}</td><td>${p.stock}</td><td><button onclick=\"openAdminEdit(${p.id})\">Sửa</button></td></tr>`);
             });
-            $('edit-list').innerHTML = out.length ? `<table><thead><tr><th>ID</th><th>Tên</th><th>Thương hiệu</th><th>Loại</th><th>Giá</th><th>Stock</th><th>Hành động</th></tr></thead><tbody>${out.join('')}</tbody></table>` : '<div>Không tìm thấy sản phẩm</div>';
+            $('edit-list').innerHTML = out.length ? `<table><thead><tr><th>ID</th><th>Tên</th><th>Thương hiệu</th><th>Loại</th><th>Giá</th><th>Stock</th><th>Thành công</th></tr></thead><tbody>${out.join('')}</tbody></table>` : '<div>Không tìm thấy sản phẩm</div>';
         }
 
         function openAdminEdit(id) {
