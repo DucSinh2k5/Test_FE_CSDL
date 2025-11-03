@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header>
+        <h1>Trang Admin</h1>
+        <button id="logoutBtn">Đăng xuất</button>
+    </header>
+
+    <main>
+        <h2>Chào mừng, <span id="adminName"></span>!</h2>
+        <p>Bạn có quyền truy cập vào khu vực quản trị.</p>
+
+        <section class="box">
+            <h3>Chỉnh sửa sản phẩm</h3>
+            <label>Tên sản phẩm: <input type="text" id="productName" value="Áo thun"></label>
+            <label>Giá: <input type="number" id="productPrice" value="120000"></label>
+            <button id="saveProduct">Lưu</button>
+            <p id="saveMsg"></p>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,958 @@
+<!doctype html>
+<html lang="vi">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Shop Demo — Role-based (Admin & User)</title>
+    <style>
+        /* ---------- CSS cơ bản (gọn mà đẹp) ---------- */
+        :root {
+            --bg: #f5f7fb;
+            --card: #fff;
+            --primary: #4f46e5;
+            --accent: #059669;
+            --danger: #ef4444;
+            --muted: #6b7280;
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            font-family: Inter, system-ui, Roboto, "Helvetica Neue", Arial;
+            margin: 0;
+            background: linear-gradient(180deg, #eef2ff, #f6f9ff);
+            color: #111
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 28px auto;
+            padding: 0 16px
+        }
+
+        header.app {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(90deg, var(--primary), #7c3aed);
+            padding: 14px;
+            border-radius: 12px;
+            color: white
+        }
+
+        header .brand {
+            display: flex;
+            gap: 12px;
+            align-items: center
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 18px
+        }
+
+        header .actions {
+            display: flex;
+            gap: 10px;
+            align-items: center
+        }
+
+        button.btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600
+        }
+
+        button.ghost {
+            background: transparent;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 10px;
+            padding: 14px;
+            box-shadow: 0 4px 18px rgba(2, 6, 23, 0.06)
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 14px
+        }
+
+        .muted {
+            color: var(--muted)
+        }
+
+        input,
+        select,
+        textarea {
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #e6e9f2;
+            width: 100%;
+            font-size: 14px
+        }
+
+        .flex {
+            display: flex;
+            gap: 10px;
+            align-items: center
+        }
+
+        .space {
+            height: 12px
+        }
+
+        /* responsive */
+        @media (max-width:900px) {
+            .grid {
+                grid-template-columns: 1fr
+            }
+
+            header.app {
+                flex-direction: column;
+                gap: 10px
+            }
+        }
+
+        /* product grid */
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 12px;
+            margin-top: 12px
+        }
+
+        .product-card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 10px;
+            border: 1px solid #edf2ff;
+            display: flex;
+            flex-direction: column;
+            gap: 8px
+        }
+
+        .product-card img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 8px
+        }
+
+        .product-card h4 {
+            margin: 0;
+            font-size: 15px
+        }
+
+        .product-card .price {
+            color: var(--accent);
+            font-weight: 700
+        }
+
+        /* tabs */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 14px
+        }
+
+        .tab {
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: #eef2ff;
+            color: var(--primary);
+            cursor: pointer
+        }
+
+        .tab.active {
+            background: var(--primary);
+            color: #fff
+        }
+
+        /* table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px
+        }
+
+        th,
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #f1f5f9;
+            text-align: left;
+            font-size: 14px
+        }
+
+        th {
+            color: var(--muted);
+            font-weight: 700
+        }
+
+        /* modal */
+        .modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(2, 6, 23, 0.4);
+            z-index: 999
+        }
+
+        .modal .panel {
+            background: #fff;
+            padding: 16px;
+            border-radius: 10px;
+            width: 95%;
+            max-width: 540px
+        }
+
+        /* small helpers */
+        .right {
+            margin-left: auto
+        }
+
+        .small {
+            font-size: 13px;
+            color: var(--muted)
+        }
+
+        .pill {
+            padding: 4px 8px;
+            border-radius: 8px;
+            background: #f3f4f6;
+            color: #111;
+            font-weight: 600
+        }
+
+        .danger {
+            background: var(--danger);
+            color: #fff;
+            padding: 6px 8px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="app">
+            <div class="brand">
+                <div
+                    style="width:46px;height:46px;border-radius:10px;background:white;display:grid;place-items:center;color:var(--primary);font-weight:800">
+                    S</div>
+                <div>
+                    <h1>Shop Demo — Quản lý bán hàng (Demo)</h1>
+                    <div class="small">Frontend-only demo — dữ liệu lưu trong localStorage</div>
+                </div>
+            </div>
+
+            <div class="actions">
+                <div id="welcome" class="small muted">Chưa đăng nhập</div>
+                <button id="btn-open-auth" class="ghost">Đăng nhập / Đăng ký</button>
+                <button id="btn-logout" class="ghost" style="display:none">Đăng xuất</button>
+            </div>
+        </header>
+
+        <div class="space"></div>
+
+        <!-- TABS chính (sẽ hiển thị theo role) -->
+        <div id="main-content">
+            <!-- Khi chưa đăng nhập, hiện các sản phẩm và khuyến khích đăng nhập -->
+            <div id="public-view" class="card">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+                    <h2 style="margin:0">Sản phẩm nổi bật</h2>
+                    <div class="small muted">Đăng nhập để mua & quản lý giỏ hàng</div>
+                </div>
+                <div id="public-products" class="product-grid"></div>
+            </div>
+        </div>
+
+        <div class="space"></div>
+        <footer class="small muted">Demo hệ thống bán hàng — Frontend only</footer>
+    </div>
+
+    <!-- Modal Auth (login/register) -->
+    <div id="modal-auth" class="modal">
+        <div class="panel">
+            <div style="display:flex;gap:12px;align-items:center">
+                <h3 id="auth-title" style="margin:0">Đăng nhập</h3>
+                <div class="right small muted">Frontend demo — không an toàn</div>
+            </div>
+            <div class="space"></div>
+
+            <div style="display:flex;gap:8px">
+                <button id="tab-login" class="tab active">Đăng nhập</button>
+                <button id="tab-register" class="tab">Đăng ký</button>
+            </div>
+
+            <!-- LOGIN -->
+            <div id="auth-login" style="margin-top:12px">
+                <label>Email</label>
+                <input type="email" id="login-email" placeholder="email@example.com">
+                <label>Mật khẩu</label>
+                <input type="password" id="login-pass" placeholder="">
+                <div class="space"></div>
+                <div style="display:flex;gap:8px;align-items:center">
+                    <button id="login-btn" class="btn">Đăng nhập</button>
+                    <button id="demo-user" class="ghost">Điền demo user</button>
+                    <button id="demo-admin" class="ghost">Điền demo admin</button>
+                </div>
+                <div id="login-error" class="small" style="color:var(--danger);margin-top:8px"></div>
+            </div>
+
+            <!-- REGISTER -->
+            <div id="auth-register" style="margin-top:12px;display:none">
+                <label>Họ và tên</label>
+                <input id="reg-name" placeholder="Họ tên">
+                <label>Email</label>
+                <input id="reg-email" placeholder="email@example.com">
+                <label>Mật khẩu</label>
+                <input id="reg-pass" type="password" placeholder="">
+                <label>Địa chỉ</label>
+                <input id="reg-address" placeholder="Địa chỉ giao hàng">
+                <label>Số điện thoại</label>
+                <input id="reg-phone" placeholder="09xxxxxxxx">
+                <div class="space"></div>
+                <div style="display:flex;gap:8px">
+                    <button id="reg-btn" class="btn">Đăng ký</button>
+                    <button id="reg-cancel" class="ghost">Hủy</button>
+                </div>
+                <div id="reg-error" class="small" style="color:var(--danger);margin-top:8px"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal generic -->
+    <div id="modal" class="modal">
+        <div class="panel" id="modal-panel"></div>
+    </div>
+
+    <script>
+        /* ========= SHOP DEMO: role-based single-file =========
+           - All data persisted in localStorage under keys:
+             products, users, carts, orders, suppliers
+           - Default admin: admin@shop.demo / admin123
+           - Customers register -> user records
+           - Customer login -> user dashboard (view + cart + profile + order history)
+           - Admin login -> admin dashboard (stats, orders, customers, suppliers)
+           - Checkout selects only checked items in cart
+        */
+
+        // ======= Utilities =======
+        const LS = {
+            get(key, fallback) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback } },
+            set(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+        };
+        function $(id) { return document.getElementById(id); }
+        function fmt(n) { return Number(n).toLocaleString('vi-VN'); }
+        function nowDate() { return new Date().toISOString().slice(0, 10); }
+
+        // ======= Initial seed data (only if not present) =======
+        function seedData() {
+            if (!LS.get('products')) {
+                const initial = [
+                    // product: id, name, price, stock, image, category, brand, purchasePrice (vốn)
+                    { id: 1, name: 'Áo thun nam', brand: 'Louis Vuitton', category: 'Thời trang', price: 120000, stock: 10, image: 'https://picsum.photos/seed/a/400/300', purchasePrice: 70000 },
+                    { id: 2, name: 'Quần jean', brand: 'Routine', category: 'Thời trang', price: 350000, stock: 8, image: 'https://picsum.photos/seed/b/400/300', purchasePrice: 200000 },
+                    { id: 3, name: 'Giày sneaker', brand: 'MLB', category: 'Giày dép', price: 450000, stock: 5, image: 'https://picsum.photos/seed/c/400/300', purchasePrice: 300000 },
+                    { id: 4, name: 'Mũ lưỡi trai', brand: 'MLB', category: 'Phụ kiện', price: 150000, stock: 12, image: 'https://picsum.photos/seed/d/400/300', purchasePrice: 80000 },
+                    { id: 5, name: 'Áo khoác nam', brand: 'Zara', category: 'Thời trang', price: 550000, stock: 7, image: 'https://picsum.photos/seed/e/400/300', purchasePrice: 320000 },
+                    { id: 6, name: 'Túi xách tay', brand: 'Gucci', category: 'Phụ kiện', price: 950000, stock: 3, image: 'https://picsum.photos/seed/f/400/300', purchasePrice: 600000 },
+                    { id: 7, name: 'Đồng hồ nam', brand: 'Tissot', category: 'Phụ kiện', price: 1250000, stock: 4, image: 'https://picsum.photos/seed/g/400/300', purchasePrice: 800000 },
+                    { id: 8, name: 'Tai nghe Bluetooth', brand: 'Sony', category: 'Điện tử', price: 780000, stock: 6, image: 'https://picsum.photos/seed/h/400/300', purchasePrice: 450000 },
+                    { id: 9, name: 'Balo laptop', brand: 'Xiaomi', category: 'Phụ kiện', price: 320000, stock: 9, image: 'https://picsum.photos/seed/i/400/300', purchasePrice: 150000 },
+                    { id: 10, name: 'Áo sơ mi nữ', brand: 'An Phước', category: 'Thời trang', price: 250000, stock: 15, image: 'https://picsum.photos/seed/j/400/300', purchasePrice: 140000 },
+                ];
+                LS.set('products', initial);
+            }
+            if (!LS.get('users')) {
+                // admin + sample user
+                const users = [
+                    { id: 'admin', email: 'admin@shop.demo', password: 'admin123', role: 'admin', name: 'Quản trị viên', address: '', phone: '' },
+                    { id: 1, email: 'user@example.com', password: 'user123', role: 'customer', name: 'Người Dùng Demo', address: 'Hà Nội', phone: '0900000001' }
+                ];
+                LS.set('users', users);
+            }
+            if (!LS.get('carts')) LS.set('carts', {});      // { userId: [ {productId, qty, size} ] }
+            if (!LS.get('orders')) LS.set('orders', []);    // { id, userId, items:[{productId,qty,price,purchasePrice}], total, date }
+            if (!LS.get('suppliers')) LS.set('suppliers', []); // { id, company, productId, importPrice }
+        }
+        seedData();
+
+        // ======= Session handling =======
+        let session = LS.get('session', null); // { userId, role, name }
+        function setSession(s) {
+            session = s;
+            LS.set('session', s);
+            renderHeader();
+            renderMainView();
+        }
+        function clearSession() {
+            session = null;
+            LS.set('session', null);
+            renderHeader();
+            renderMainView();
+        }
+
+        // ======= Header & Auth modal =======
+        $('btn-open-auth').addEventListener('click', () => { openAuth(); });
+        $('btn-logout').addEventListener('click', () => { if (confirm('Đăng xuất?')) clearSession(); });
+
+        function renderHeader() {
+            if (session) {
+                $('welcome').textContent = `${session.role === 'admin' ? 'Admin' : 'Người dùng'}: ${session.name}`;
+                $('btn-open-auth').style.display = 'none';
+                $('btn-logout').style.display = 'inline-block';
+            } else {
+                $('welcome').textContent = 'Chưa đăng nhập';
+                $('btn-open-auth').style.display = 'inline-block';
+                $('btn-logout').style.display = 'none';
+            }
+        }
+        renderHeader();
+
+        // Auth modal logic
+        function openAuth() {
+            $('modal-auth').style.display = 'flex';
+            showAuthTab('login');
+        }
+        $('tab-login').addEventListener('click', () => showAuthTab('login'));
+        $('tab-register').addEventListener('click', () => showAuthTab('register'));
+        $('reg-cancel').addEventListener('click', () => { $('modal-auth').style.display = 'none'; });
+        $('demo-user').addEventListener('click', () => { $('login-email').value = 'user@example.com'; $('login-pass').value = 'user123'; });
+        $('demo-admin').addEventListener('click', () => { $('login-email').value = 'admin@shop.demo'; $('login-pass').value = 'admin123'; });
+
+        function showAuthTab(tab) {
+            if (tab === 'login') {
+                $('auth-title').textContent = 'Đăng nhập';
+                $('auth-login').style.display = 'block';
+                $('auth-register').style.display = 'none';
+                $('tab-login').classList.add('active');
+                $('tab-register').classList.remove('active');
+            } else {
+                $('auth-title').textContent = 'Đăng ký tài khoản';
+                $('auth-login').style.display = 'none';
+                $('auth-register').style.display = 'block';
+                $('tab-login').classList.remove('active');
+                $('tab-register').classList.add('active');
+            }
+        }
+
+        // ======= Auth actions: login & register =======
+        $('login-btn').addEventListener('click', loginHandler);
+        $('reg-btn').addEventListener('click', registerHandler);
+
+        function loginHandler() {
+            const email = $('login-email').value.trim().toLowerCase();
+            const pass = $('login-pass').value;
+            const users = LS.get('users', []);
+            const u = users.find(x => x.email.toLowerCase() === email && x.password === pass);
+            if (!u) { $('login-error').textContent = 'Email hoặc mật khẩu không đúng.'; return; }
+            // create session
+            setSession({ userId: u.id, role: u.role, name: u.name });
+            $('login-error').textContent = ''; $('modal-auth').style.display = 'none';
+            // ensure cart exists
+            const carts = LS.get('carts', {});
+            if (!carts[String(u.id)]) { carts[String(u.id)] = []; LS.set('carts', carts); }
+        }
+
+        function registerHandler() {
+            const name = $('reg-name').value.trim();
+            const email = $('reg-email').value.trim().toLowerCase();
+            const pass = $('reg-pass').value;
+            const address = $('reg-address').value.trim();
+            const phone = $('reg-phone').value.trim();
+            if (!name || !email || !pass) { $('reg-error').textContent = 'Vui lòng điền đầy đủ tên, email, mật khẩu.'; return; }
+            const users = LS.get('users', []);
+            if (users.find(x => x.email.toLowerCase() === email)) { $('reg-error').textContent = 'Email đã được đăng ký.'; return; }
+            // assign id: next integer
+            const ids = users.filter(u => u.role !== 'admin').map(u => Number(u.id)).filter(n => !isNaN(n));
+            const nextId = ids.length ? Math.max(...ids) + 1 : 1;
+            const newUser = { id: nextId, email, password: pass, role: 'customer', name, address, phone };
+            users.push(newUser); LS.set('users', users);
+            // create cart
+            const carts = LS.get('carts', {}); carts[String(newUser.id)] = []; LS.set('carts', carts);
+            // auto login
+            setSession({ userId: newUser.id, role: 'customer', name: newUser.name });
+            $('modal-auth').style.display = 'none';
+            $('reg-error').textContent = '';
+            alert('Đăng ký thành công. Bạn đã đăng nhập tự động.');
+        }
+
+        // ======= Main UI render (switch by role) =======
+        function renderMainView() {
+            const main = $('main-content');
+            main.innerHTML = '';
+            if (!session) {
+                // Public view (list products)
+                const div = document.createElement('div');
+                div.className = 'card';
+                div.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between"><h2 style="margin:0">Sản phẩm nổi bật</h2><div class="small muted">Đăng nhập/đăng ký để mua hàng</div></div><div id="public-products" class="product-grid" style="margin-top:12px"></div>`;
+                main.appendChild(div);
+                renderProductGrid('public-products');
+                return;
+            }
+            if (session.role === 'admin') renderAdminDashboard(main);
+            else renderUserDashboard(main);
+        }
+
+        // ======= Product rendering helper =======
+        function getProducts() { return LS.get('products', []); }
+        function setProducts(p) { LS.set('products', p); }
+
+        function renderProductGrid(targetId, opts = {}) {
+            const container = document.getElementById(targetId);
+            if (!container) return;
+            const products = getProducts();
+            container.innerHTML = '';
+            products.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                card.innerHTML = `
+      <img src="${p.image || 'https://via.placeholder.com/400x300'}" alt="${p.name}">
+      <h4>${p.name}</h4>
+      <div class="price">${fmt(p.price)} VNĐ</div>
+      <div class="small muted">${p.brand || ''} • ${p.category || ''}</div>
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <button class="btn" onclick="openProductModal(${p.id})">Chi tiết</button>
+        <button class="ghost" onclick="addToCartPrompt(${p.id})">Thêm giỏ</button>
+      </div>
+    `;
+                container.appendChild(card);
+            });
+        }
+
+        // open product modal for quick view + buy
+        function openProductModal(productId) {
+            const p = getProducts().find(x => x.id === productId);
+            if (!p) return alert('Sản phẩm không tồn tại');
+            const html = `
+    <h3 style="margin:0">${p.name}</h3>
+    <div style="display:flex;gap:12px;margin-top:10px">
+      <img src="${p.image}" style="width:48%;height:160px;object-fit:cover;border-radius:8px">
+      <div style="flex:1">
+        <p><strong>Giá:</strong> ${fmt(p.price)} VNĐ</p>
+        <p><strong>Tồn kho:</strong> ${p.stock}</p>
+        <p class="small muted">${p.brand} • ${p.category}</p>
+        <p style="margin-top:6px">${p.description || ''}</p>
+      </div>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+      <button class="ghost" onclick="closeModal()">Đóng</button>
+      <button class="btn" onclick="addToCartPrompt(${p.id})">Thêm vào giỏ</button>
+    </div>
+  `;
+            showModal(html);
+        }
+
+        // modal helpers
+        function showModal(html) { $('modal-panel').innerHTML = html; $('modal').style.display = 'flex'; }
+        function closeModal() { $('modal-panel').innerHTML = ''; $('modal').style.display = 'none'; }
+        $('modal').addEventListener('click', e => { if (e.target === $('modal')) closeModal(); });
+
+        // ======= CART logic (per user) =======
+        function getCarts() { return LS.get('carts', {}); }
+        function setCarts(c) { LS.set('carts', c); }
+
+        function addToCartPrompt(productId) {
+            if (!session || session.role !== 'customer') { openAuth(); return; }
+            const qty = Number(prompt('Số lượng muốn thêm:', '1')) || 1;
+            if (qty <= 0) return;
+            const size = prompt('Size (bỏ trống nếu không cần):', '') || '';
+            addToCart(session.userId, productId, qty, size);
+            alert('Đã thêm vào giỏ');
+        }
+        function addToCart(userId, productId, qty = 1, size = '') {
+            const carts = getCarts();
+            const userKey = String(userId);
+            if (!carts[userKey]) carts[userKey] = [];
+            const p = getProducts().find(x => x.id === productId);
+            if (!p) return alert('Sản phẩm không tồn tại');
+            const existing = carts[userKey].find(it => it.productId === productId && it.size === size);
+            const inCartQty = existing ? existing.qty : 0;
+            if (inCartQty + qty > p.stock) return alert(`Không đủ tồn kho. Tồn: ${p.stock - inCartQty}`);
+            if (existing) existing.qty += qty; else carts[userKey].push({ productId, qty, size });
+            setCarts(carts);
+            return true;
+        }
+
+        // ======= User Dashboard (customer) =======
+        function renderUserDashboard(target) {
+            // build tabs: Sản phẩm | Giỏ hàng | Thông tin cá nhân | Lịch sử đơn hàng
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <h2 style="margin:0">Trang người dùng</h2>
+      <div class="small muted">Xin chào, <strong>${session.name}</strong></div>
+    </div>
+    <div class="tabs" style="margin-top:12px">
+      <div class="tab active" data-tab="tab-products">Sản phẩm</div>
+      <div class="tab" data-tab="tab-cart">Giỏ hàng</div>
+      <div class="tab" data-tab="tab-profile">Thông tin cá nhân</div>
+      <div class="tab" data-tab="tab-orders">Lịch sử mua hàng</div>
+    </div>
+    <div style="margin-top:12px">
+      <div id="tab-products" class="card tab-content"></div>
+      <div id="tab-cart" class="card tab-content" style="display:none"></div>
+      <div id="tab-profile" class="card tab-content" style="display:none"></div>
+      <div id="tab-orders" class="card tab-content" style="display:none"></div>
+    </div>
+  `;
+            target.appendChild(wrapper);
+
+            // tab switching
+            wrapper.querySelectorAll('.tab').forEach(tb => {
+                tb.addEventListener('click', () => {
+                    wrapper.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+                    tb.classList.add('active');
+                    wrapper.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+                    wrapper.querySelector(tb.dataset.tab).style.display = 'block';
+                    // render content when tab becomes active (for up-to-date)
+                    if (tb.dataset.tab === 'tab-products') renderProductGrid('tab-products');
+                    if (tb.dataset.tab === 'tab-cart') renderUserCart();
+                    if (tb.dataset.tab === 'tab-profile') renderUserProfile();
+                    if (tb.dataset.tab === 'tab-orders') renderUserOrders();
+                });
+            });
+
+            // initial render product grid
+            renderProductGrid('tab-products');
+        }
+
+        // render user's cart with checkboxes (select items to checkout)
+        function renderUserCart() {
+            const cont = $('tab-cart');
+            cont.innerHTML = `<h3>Giỏ hàng của bạn</h3>`;
+            const carts = getCarts();
+            const list = carts[String(session.userId)] || [];
+            if (list.length === 0) { cont.innerHTML += '<div class="small muted">Giỏ hàng trống</div>'; return; }
+
+            // table with checkbox column
+            let html = `<div style="overflow:auto"><table><thead><tr><th></th><th>SP</th><th>Size</th><th>Số lượng</th><th>Đơn giá</th><th>Thành tiền</th><th>Thao tác</th></tr></thead><tbody>`;
+            list.forEach((it, idx) => {
+                const p = getProducts().find(x => x.id === it.productId) || { name: '[Không xác định]', price: 0 };
+                html += `<tr>
+      <td><input type="checkbox" data-idx="${idx}" class="cart-check"></td>
+      <td>${p.name}</td>
+      <td>${it.size || '-'}</td>
+      <td><input type="number" value="${it.qty}" min="1" style="width:70px" data-idx="${idx}" class="cart-qty"></td>
+      <td>${fmt(p.price)}</td>
+      <td>${fmt(p.price * it.qty)}</td>
+      <td><button class="ghost" data-idx="${idx}" onclick="removeCartItem(${session.userId},${it.productId},'${(it.size || '').replace(/'/g, "\\'")}')">Xóa</button></td>
+    </tr>`;
+            });
+            html += `</tbody></table></div>`;
+            html += `<div style="display:flex;gap:10px;margin-top:12px">
+    <button id="checkout-selected" class="btn">Thanh toán mục đã chọn</button>
+    <button id="checkout-all" class="btn" style="background:#059669">Thanh toán tất cả</button>
+    <button id="clear-cart" class="ghost">Xóa giỏ</button>
+  </div>
+  <div id="cart-msg" style="margin-top:10px" class="small muted"></div>`;
+            cont.innerHTML += html;
+
+            // attach events: qty change
+            cont.querySelectorAll('.cart-qty').forEach(inp => {
+                inp.addEventListener('change', (e) => {
+                    const idx = Number(e.target.dataset.idx); const val = Math.max(1, Number(e.target.value) || 1);
+                    const cartsObj = getCarts(); const arr = cartsObj[String(session.userId)];
+                    if (!arr || !arr[idx]) return;
+                    // check stock
+                    const p = getProducts().find(x => x.id === arr[idx].productId);
+                    if (p && val > p.stock) { alert('Không đủ tồn kho'); e.target.value = arr[idx].qty; return; }
+                    arr[idx].qty = val; setCarts(cartsObj); renderUserCart();
+                });
+            });
+
+            // checkout selected
+            $('checkout-selected').addEventListener('click', () => {
+                const checked = Array.from(cont.querySelectorAll('.cart-check')).filter(cb => cb.checked).map(cb => Number(cb.dataset.idx));
+                if (checked.length === 0) return alert('Chọn ít nhất 1 mục để thanh toán');
+                processCheckout(selectedIndices = checked);
+            });
+            // checkout all
+            $('checkout-all').addEventListener('click', () => { const indices = Array.from({ length: list.length }, (_, i) => i); if (indices.length === 0) return alert('Giỏ rỗng'); processCheckout(indices); });
+            $('clear-cart').addEventListener('click', () => { if (!confirm('Xóa toàn bộ giỏ?')) return; const cartsObj = getCarts(); cartsObj[String(session.userId)] = []; setCarts(cartsObj); renderUserCart(); });
+        }
+
+        // remove single cart item by matching productId+size
+        function removeCartItem(userId, productId, size) {
+            const cartsObj = getCarts(); const key = String(userId); if (!cartsObj[key]) return;
+            cartsObj[key] = cartsObj[key].filter(it => !(it.productId === productId && String(it.size) === String(size)));
+            setCarts(cartsObj); if (session && session.userId === userId) renderUserCart();
+        }
+
+        // processCheckout(indices) where indices are indices in cart array
+        function processCheckout(indices) {
+            const cartsObj = getCarts(); const key = String(session.userId); const arr = cartsObj[key] || []; if (!arr.length) return;
+            // build items to checkout
+            const items = indices.map(i => arr[i]).filter(Boolean);
+            // verify stock for each item
+            const products = getProducts();
+            for (const it of items) {
+                const p = products.find(x => x.id === it.productId);
+                if (!p) return alert('Sản phẩm không tồn tại: ' + it.productId);
+                if (it.qty > p.stock) return alert(`Không đủ tồn kho cho ${p.name}. Tồn: ${p.stock}`);
+            }
+            // perform: decrement stock and create order record
+            const orders = LS.get('orders', []);
+            const orderId = orders.length ? Math.max(...orders.map(o => o.id)) + 1 : 1;
+            let total = 0;
+            const orderItems = [];
+            for (const it of items) {
+                const p = products.find(x => x.id === it.productId);
+                p.stock -= it.qty;
+                total += p.price * it.qty;
+                orderItems.push({ productId: p.id, qty: it.qty, price: p.price, purchasePrice: p.purchasePrice || 0, size: it.size || '' });
+            }
+            const order = { id: orderId, userId: session.userId, items: orderItems, total, date: nowDate() };
+            orders.push(order);
+            LS.set('orders', orders);
+            setProducts(products);
+            // remove checked items from cart (by sp+size)
+            const remaining = arr.filter((_, i) => !indices.includes(i));
+            const cartsAll = getCarts(); cartsAll[key] = remaining; setCarts(cartsAll);
+            alert('Thanh toán thành công — mã đơn: ' + orderId);
+            // refresh views
+            renderUserCart();
+            renderUserOrders();
+            // if admin open, refresh admin tables too
+            if (session && session.role === 'admin') renderMainView();
+        }
+
+        // ======= User profile & orders =======
+        function renderUserProfile() {
+            const cont = $('tab-profile');
+            const users = LS.get('users', []);
+            const me = users.find(u => String(u.id) === String(session.userId));
+            cont.innerHTML = `<h3>Thông tin cá nhân</h3>
+    <div style="display:grid;grid-template-columns:1fr;gap:8px;max-width:620px">
+      <label>Họ và tên</label><input id="profile-name" value="${me.name || ''}">
+      <label>Địa chỉ</label><input id="profile-address" value="${me.address || ''}">
+      <label>Số điện thoại</label><input id="profile-phone" value="${me.phone || ''}">
+      <div style="display:flex;gap:8px"><button id="save-profile" class="btn">Lưu</button><button id="cancel-profile" class="ghost">Hủy</button></div>
+      <div id="profile-msg" class="small muted"></div>
+    </div>`;
+            $('save-profile').addEventListener('click', () => {
+                me.name = $('profile-name').value.trim();
+                me.address = $('profile-address').value.trim();
+                me.phone = $('profile-phone').value.trim();
+                LS.set('users', users);
+                session.name = me.name; LS.set('session', session); renderHeader();
+                $('profile-msg').textContent = 'Đã lưu thông tin';
+            });
+            $('cancel-profile').addEventListener('click', () => renderUserProfile());
+        }
+
+        function renderUserOrders() {
+            const cont = $('tab-orders');
+            const orders = LS.get('orders', []);
+            const my = orders.filter(o => String(o.userId) === String(session.userId));
+            if (my.length === 0) { cont.innerHTML = '<div class="small muted">Bạn chưa có đơn hàng nào</div>'; return; }
+            let html = `<table><thead><tr><th>ID</th><th>Ngày</th><th>Sản phẩm</th><th>Số lượng</th><th>Tổng</th></tr></thead><tbody>`;
+            my.forEach(o => {
+                const parts = o.items.map(it => {
+                    const p = getProducts().find(x => x.id === it.productId) || { name: '[X]' }; return `${p.name} ${it.size ? '(' + it.size + ')' : ''} x${it.qty}`;
+                }).join('<br>');
+                html += `<tr><td>${o.id}</td><td>${o.date}</td><td>${parts}</td><td>${o.items.reduce((s, i) => s + i.qty, 0)}</td><td>${fmt(o.total)}</td></tr>`;
+            });
+            html += '</tbody></table>';
+            cont.innerHTML = html;
+        }
+
+        // ======= Admin Dashboard =======
+        function renderAdminDashboard(target) {
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <h2 style="margin:0">Admin Dashboard</h2>
+      <div class="small muted">Chào Admin: <strong>${session.name}</strong></div>
+    </div>
+
+    <div class="tabs" style="margin-top:12px">
+      <div class="tab active" data-tab="admin-stats">Thống kê</div>
+      <div class="tab" data-tab="admin-orders">Đơn hàng</div>
+      <div class="tab" data-tab="admin-customers">Khách hàng</div>
+      <div class="tab" data-tab="admin-suppliers">Nhà cung cấp</div>
+    </div>
+
+    <div style="margin-top:12px">
+      <div id="admin-stats" class="card tab-content"></div>
+      <div id="admin-orders" class="card tab-content" style="display:none"></div>
+      <div id="admin-customers" class="card tab-content" style="display:none"></div>
+      <div id="admin-suppliers" class="card tab-content" style="display:none"></div>
+    </div>
+  `;
+            target.appendChild(wrapper);
+
+            wrapper.querySelectorAll('.tab').forEach(tb => {
+                tb.addEventListener('click', () => {
+                    wrapper.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+                    tb.classList.add('active');
+                    wrapper.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+                    wrapper.querySelector(tb.dataset.tab).style.display = 'block';
+                    if (tb.dataset.tab === 'admin-stats') renderAdminStats();
+                    if (tb.dataset.tab === 'admin-orders') renderAdminOrders();
+                    if (tb.dataset.tab === 'admin-customers') renderAdminCustomers();
+                    if (tb.dataset.tab === 'admin-suppliers') renderAdminSuppliers();
+                });
+            });
+
+            // initial
+            renderAdminStats();
+        }
+
+        // admin: stats
+        function renderAdminStats() {
+            const cont = $('admin-stats');
+            const products = getProducts();
+            const orders = LS.get('orders', []);
+            const users = LS.get('users', []);
+            const suppliers = LS.get('suppliers', []);
+
+            const totalProducts = products.length;
+            const totalCustomers = users.filter(u => u.role === 'customer').length;
+            const totalOrders = orders.length;
+            const revenue = orders.reduce((s, o) => s + Number(o.total), 0);
+            const totalCost = orders.reduce((s, o) => s + o.items.reduce((s2, it) => s2 + ((it.purchasePrice || 0) * it.qty), 0), 0);
+            const profit = revenue - totalCost;
+
+            cont.innerHTML = `
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <div class="card" style="flex:1;min-width:180px"><div class="muted">Tổng sản phẩm</div><div style="font-size:18px">${totalProducts}</div></div>
+      <div class="card" style="flex:1;min-width:180px"><div class="muted">Tổng khách hàng</div><div style="font-size:18px">${totalCustomers}</div></div>
+      <div class="card" style="flex:1;min-width:180px"><div class="muted">Tổng đơn hàng</div><div style="font-size:18px">${totalOrders}</div></div>
+      <div class="card" style="flex:1;min-width:180px"><div class="muted">Doanh thu</div><div style="font-size:18px">${fmt(revenue)} VNĐ</div></div>
+      <div class="card" style="flex:1;min-width:180px"><div class="muted">Tổng vốn</div><div style="font-size:18px">${fmt(totalCost)} VNĐ</div></div>
+      <div class="card" style="flex:1;min-width:180px"><div class="muted">Lợi nhuận</div><div style="font-size:18px">${fmt(profit)} VNĐ</div></div>
+    </div>
+    <div style="margin-top:12px">
+      <h4>Danh sách các sản phẩm (tồn kho)</h4>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-top:8px">
+      ${getProducts().map(p => `<div class="card small"><strong>${p.name}</strong><div class="small muted">${p.brand}</div><div style="margin-top:4px">${fmt(p.price)} VNĐ • Tồn: ${p.stock}</div></div>`).join('')}
+      </div>
+    </div>
+  `;
+        }
+
+        // admin: orders
+        function renderAdminOrders() {
+            const cont = $('admin-orders');
+            const orders = LS.get('orders', []);
+            const users = LS.get('users', []);
+            const products = getProducts();
+            let html = `<h3>Đơn hàng</h3>`;
+            if (orders.length === 0) { html += '<div class="small muted">Chưa có đơn hàng</div>'; cont.innerHTML = html; return; }
+            html += `<div style="overflow:auto"><table><thead><tr><th>ID</th><th>Khách</th><th>Sản phẩm</th><th>Tổng</th><th>Ngày</th><th>Thao tác</th></tr></thead><tbody>`;
+            orders.slice().reverse().forEach(o => {
+                const u = users.find(x => String(x.id) === String(o.userId)) || { name: '[khách vãng lai]' };
+                const parts = o.items.map(it => {
+                    const p = products.find(x => x.id === it.productId) || { name: '[?]' };
+                    return `${p.name} x${it.qty} (${fmt(it.price)})`;
+                }).join('<br>');
+                html += `<tr><td>${o.id}</td><td>${u.name} (id:${o.userId})</td><td>${parts}</td><td>${fmt(o.total)}</td><td>${o.date}</td><td><button class="ghost" onclick="deleteOrderAdmin(${o.id})">Xóa</button></td></tr>`;
+            });
+            html += '</tbody></table></div>';
+            cont.innerHTML = html;
+        }
+        function deleteOrderAdmin(id) {
+            if (!confirm('Xóa đơn hàng ' + id + ' ?')) return;
+            let orders = LS.get('orders', []);
+            orders = orders.filter(o => o.id !== id);
+            LS.set('orders', orders);
+            renderAdminOrders();
+        }
+
+        // admin: customers
+        function renderAdminCustomers() {
+            const cont = $('admin-customers');
+            const users = LS.get('users', []);
+            const customers = users.filter(u => u.role === 'customer');
+            const orders = LS.get('orders', []);
+            let html = `<h3>Khách hàng</h3>`;
+            if (customers.length === 0) { html += '<div class="small muted">Chưa có khách</div>'; cont.innerHTML = html; return; }
+            html += `<div style="overflow:auto"><table><thead><tr><th>ID</th><th>Tên</th><th>Email</th><th>ĐT</th><th>Địa chỉ</th><th>Đã mua</th></tr></thead><tbody>`;
+            customers.forEach(c => {
+                const theirOrders = orders.filter(o => String(o.userId) === String(c.id));
+                const purchased = theirOrders.length ? theirOrders.map(o => o.items.map(it => `${getProducts().find(p => p.id === it.productId)?.name || '[?]'} x${it.qty}`).join('<br>')).join('<hr>') : '';
+                html += `<tr><td>${c.id}</td><td>${c.name}</td><td>${c.email}</td><td>${c.phone || '-'}</td><td>${c.address || '-'}</td><td>${purchased || '<span class="small muted">Chưa mua</span>'}</td></tr>`;
+            });
+            html += '</tbody></table></div>';
+            cont.innerHTML = html;
+        }
+
+        // admin: suppliers management
+        function renderAdminSuppliers() {
+            const cont = $('admin-suppliers');
+            const suppliers = LS.get('suppliers', []);
+            const products = getProducts();
+            let html = `<h3>Nhà cung cấp & Giá nhập</h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      <input id="sup-company" placeholder="Tên công ty" style="flex:2">
+      <select id="sup-product" style="flex:1">${products.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}</select>
+      <input id="sup-price" placeholder="Giá nhập (VNĐ)" style="flex:1">
+      <button id="sup-add" class="btn">Thêm</button>
+    </div>
+    <div style="overflow:auto"><table><thead><tr><th>ID</th><th>Công ty</th><th>Sản phẩm</th><th>Giá nhập</th><th>Thao tác</th></tr></thead><tbody>`;
+            suppliers.forEach((s, idx) => {
+                html += `<tr><td>${idx + 1}</td><td>${s.company}</td><td>${products.find(p => p.id == s.productId)?.name || '[?]'}</td><td>${fmt(s.importPrice)}</td><td><button class="ghost" onclick="removeSupplier(${idx})">Xóa</button></td></tr>`;
+            });
+            html += '</tbody></table></div>';
+            cont.innerHTML = html;
+            $('sup-add').addEventListener('click', () => {
+                const company = $('sup-company').value.trim();
+                const productId = Number($('sup-product').value);
+                const importPrice = Number($('sup-price').value) || 0;
+                if (!company) return alert('Nhập tên công ty');
+                const suppliers = LS.get('suppliers', []);
+                suppliers.push({ company, productId, importPrice });
+                LS.set('suppliers', suppliers);
+                // also update product purchasePrice to latest importPrice (simple behavior)
+                const products = getProducts();
+                const p = products.find(x => x.id === productId);
+                if (p) { p.purchasePrice = importPrice; setProducts(products); }
+                renderAdminSuppliers();
+                alert('Đã thêm nhà cung cấp');
+            });
+        }
+        function removeSupplier(idx) {
+            if (!confirm('Xóa nhà cung cấp?')) return;
+            const suppliers = LS.get('suppliers', []);
+            suppliers.splice(idx, 1);
+            LS.set('suppliers', suppliers);
+            renderAdminSuppliers();
+        }
+
+        // ======= boot =======
+        renderMainView();
+
+        /* Notes for extension:
+         - This demo stores passwords in plain text (unsafe) — in real apps hash + backend required.
+         - Orders keep purchasePrice copied at time of checkout to correctly compute historical profit.
+         - You can extend product model to include sizes/colors arrays and show select inputs in cart/checkout UI.
+         - Admin can be extended with CSV export, charts, date range filters, etc.
+        */
+    </script>
+</body>
+
+</html>

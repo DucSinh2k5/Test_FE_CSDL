@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="vi">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Demo E-Commerce - Fast Mock (Client-side)</title>
+    <style>
+        :root {
+            --bg: #f5f7fb;
+            --card: #fff;
+            --accent: #16a34a;
+            --muted: #64748b;
+            --danger: #ef4444
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            font-family: Inter, Segoe UI, Roboto, Arial;
+            margin: 0;
+            background: var(--bg);
+            color: #111
+        }
+
+        header {
+            background: linear-gradient(90deg, #6a5acd, #7b3fe4);
+            color: #fff;
+            padding: 12px 20px
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 18px auto;
+            padding: 0 16px
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px
+        }
+
+        .muted {
+            color: var(--muted)
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin: 12px 0
+        }
+
+        .tab-btn {
+            background: #eee;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer
+        }
+
+        .tab-btn.active {
+            background: var(--accent);
+            color: #fff
+        }
+
+        .card {
+            background: var(--card);
+            padding: 16px;
+            border-radius: 10px;
+            box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06)
+        }
+
+        .stats {
+            display: flex;
+            gap: 12px;
+            margin: 12px 0
+        }
+
+        .stat {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            background: var(--card)
+        }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 14px
+        }
+
+        .product-card {
+            background: #fff;
+            padding: 12px;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+            text-align: center
+        }
+
+        .product-card img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 8px
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse
+        }
+
+        th,
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #eef2ff;
+            text-align: left
+        }
+
+        .right {
+            display: flex;
+            gap: 8px;
+            align-items: center
+        }
+
+        .ghost {
+            background: transparent;
+            border: 1px solid #22305d;
+            padding: 8px;
+            border-radius: 8px
+        }
+
+        input,
+        select {
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #e6e9f2
+        }
+
+        button {
+            background: var(--accent);
+            color: white;
+            /* chữ trắng trên nền màu */
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        button.small {
+            padding: 6px 10px;
+            font-size: 13px;
+        }
+
+        button.ghost {
+            background: transparent;
+            color: var(--muted);
+            /* màu chữ dễ nhìn trên nền trắng */
+            border: 1px solid #e6e9f2;
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+
+        /* nếu bạn muốn ghost có accent màu xanh thay vì muted, đổi color: var(--accent) */
+
+        /* đảm bảo khu vực nút trong product-card không đè lên tên */
+        .product-card h4 {
+            margin: 8px 0 6px;
+            color: #111;
+            /* chắc chắn đọc được */
+            font-size: 15px;
+        }
+
+        .product-card .muted {
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        .product-card .price {
+            margin-top: 6px;
+            font-weight: 700;
+            color: #059669;
+        }
+
+        /* khoảng cách vùng nút */
+        .product-card .actions,
+        .product-card .action-row {
+            margin-top: 10px;
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .small {
+            padding: 6px 8px;
+            font-size: 13px
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999
+        }
+
+        .modal-content {
+            background: #fff;
+            border-radius: 10px;
+            padding: 16px;
+            width: 95%;
+            max-width: 520px
+        }
+
+        .hide {
+            display: none
+        }
+
+        @media(max-width:800px) {
+            .product-grid {
+                grid-template-columns: repeat(2, 1fr)
+            }
+        }
+
+        @media(max-width:480px) {
+            .product-grid {
+                grid-template-columns: repeat(1, 1fr)
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="container topbar">
+            <div style="display:flex;gap:12px;align-items:center">
+                <img src="logo.png" alt="logo" style="height:64px;object-fit:contain">
+                <div>
+                    <h1 style="margin:0;font-size:20px">HỆ THỐNG BÁN HÀNG - DEMO</h1>
+                    <div class="muted">Giao diện mô phỏng (client-only) — có thể kết nối backend sau</div>
+                </div>
+            </div>
+            <div id="auth-area" style="display:flex;align-items:center;gap:12px">
+                <!-- sẽ được cập nhật bởi JS -->
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <!-- Login / Register Modal -->
+        <div id="auth-modal" class="modal-overlay hide" onclick="if(event.target===this) closeAuthModal()">
+            <div class="modal-content">
+                <h3 id="auth-title">Đăng nhập</h3>
+                <div style="display:flex;gap:12px;margin-bottom:12px">
+                    <button onclick="showAuth('login')" class="small">Đăng nhập</button>
+                    <button onclick="showAuth('register')" class="small ghost">Đăng ký</button>
+                </div>
+                <div id="auth-forms"></div>
+                <div style="text-align:right;margin-top:12px"><button onclick="closeAuthModal()"
+                        class="ghost">Đóng</button></div>
+            </div>
+        </div>
+
+        <div id="main-ui">
+
+            <!-- Tabs will be rendered depending on role -->
+            <div id="tabs" class="tabs"></div>
+
+            <!-- Content area -->
+            <div id="tab-content"></div>
+
+        </div>
+
+    </main>
+
+    <script>
+        // ------------------- Local Storage keys & sample data -------------------
+        const LS_USERS = 'demo_users_v1';
+        const LS_PRODUCTS = 'demo_products_v1';
+        const LS_ORDERS = 'demo_orders_v1';
+        const LS_SUPPLIERS = 'demo_suppliers_v1';
+
+        // Helper: load or initialize
+        function loadOrInit(key, fallback) {
+            const raw = localStorage.getItem(key);
+            if (!raw) { localStorage.setItem(key, JSON.stringify(fallback)); return fallback; }
+            try { return JSON.parse(raw); } catch (e) { localStorage.setItem(key, JSON.stringify(fallback)); return fallback; }
+        }
+        function save(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+
+        // --- Sample products (include supplierId and importPrice via supplier) ---
+        const defaultSuppliers = [
+            { id: 1, name: 'Công ty ABC', importPriceFactor: 0.6 },
+            { id: 2, name: 'Công ty XYZ', importPriceFactor: 0.5 }
+        ];
+
+        const defaultProducts = [
+            { id: 1, name: 'Áo thun', brand: 'LV', category: 'Thời trang', price: 120000, stock: 10, image: 'ao_thun.jpg', supplierId: 1 },
+            { id: 2, name: 'Quần jean', brand: 'Routine', category: 'Thời trang', price: 350000, stock: 8, image: 'quan_jean.jpg', supplierId: 2 },
+            { id: 3, name: 'Giày sneaker', brand: 'MLB', category: 'Giày dép', price: 450000, stock: 5, image: 'giay_sneaker.jpg', supplierId: 2 }
+        ];
+
+        // --- Default admin user (username: admin, password: admin123) and a sample customer ---
+        const defaultUsers = [
+            { id: 1, username: 'admin', pwd: 'admin123', role: 'admin', name: 'Admin', address: '', phone: '', registeredAt: new Date().toISOString() },
+            { id: 2, username: 'user1', pwd: 'user123', role: 'customer', name: 'Nguyễn Văn A', address: 'Hà Nội', phone: '0900000001', registeredAt: new Date().toISOString() }
+        ];
+
+        // initialize storage
+        let suppliers = loadOrInit(LS_SUPPLIERS, defaultSuppliers);
+        let products = loadOrInit(LS_PRODUCTS, defaultProducts);
+        let users = loadOrInit(LS_USERS, defaultUsers);
+        let orders = loadOrInit(LS_ORDERS, []); // orders saved as {id, userId, items:[{productId,qty,size,price}], total, date}
+
+        // simple in-memory session
+        let currentUser = null; // store user object when logged in
+        let carts = {}; // carts per userId: { userId: [ {productId, qty, size, selected} ] }
+
+        // ------------------- UTIL -------------------
+        function $(id) { return document.getElementById(id); }
+        function formatCurrency(n) { return Number(n).toLocaleString('vi-VN'); }
+        function nextId(arr) { return arr.length ? Math.max(...arr.map(x => x.id)) + 1 : 1; }
+
+        // ------------------- AUTH UI -------------------
+        function renderAuthArea() {
+            const area = $('auth-area'); area.innerHTML = '';
+            if (currentUser) {
+                const span = document.createElement('div'); span.innerHTML = `<div class="muted">Xin chào <strong>${currentUser.name}</strong> (${currentUser.role})</div>`;
+                const btnProfile = document.createElement('button'); btnProfile.textContent = 'Hồ sơ'; btnProfile.className = 'small ghost'; btnProfile.onclick = () => openTab('profile');
+                const btnLogout = document.createElement('button'); btnLogout.textContent = 'Đăng xuất'; btnLogout.onclick = logout;
+                area.appendChild(span); area.appendChild(btnProfile); area.appendChild(btnLogout);
+            } else {
+                const btnLogin = document.createElement('button'); btnLogin.textContent = 'Đăng nhập / Đăng ký'; btnLogin.onclick = () => openAuthModal('login');
+                area.appendChild(btnLogin);
+            }
+        }
+
+        function openAuthModal(mode = 'login') {
+            showAuth(mode); $('auth-modal').classList.remove('hide');
+        }
+        function closeAuthModal() { $('auth-modal').classList.add('hide'); }
+
+        function showAuth(mode) {
+            const title = $('auth-title'); const forms = $('auth-forms'); title.textContent = mode === 'login' ? 'Đăng nhập' : 'Đăng ký';
+            if (mode === 'login') {
+                forms.innerHTML = `
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <input id="login-username" placeholder="Tên tài khoản (username)">
+            <input id="login-pwd" placeholder="Mật khẩu" type="password">
+            <div style="text-align:right;"><button onclick="handleLogin()">Đăng nhập</button></div>
+          </div>
+        `;
+            } else {
+                forms.innerHTML = `
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <input id="reg-username" placeholder="Username">
+            <input id="reg-pwd" placeholder="Mật khẩu" type="password">
+            <input id="reg-name" placeholder="Họ tên">
+            <input id="reg-phone" placeholder="Số điện thoại">
+            <input id="reg-address" placeholder="Địa chỉ">
+            <div style="text-align:right;"><button onclick="handleRegister()">Đăng ký</button></div>
+          </div>
+        `;
+            }
+        }
+
+        function handleLogin() {
+            const u = document.getElementById('login-username').value.trim();
+            const p = document.getElementById('login-pwd').value;
+            const found = users.find(x => x.username === u && x.pwd === p);
+            if (!found) return alert('Sai tên tài khoản hoặc mật khẩu');
+            currentUser = found; closeAuthModal(); renderAuthArea(); renderApp();
+        }
+
+        function handleRegister() {
+            const username = $('reg-username').value.trim(); const pwd = $('reg-pwd').value; const name = $('reg-name').value.trim(); const phone = $('reg-phone').value.trim(); const address = $('reg-address').value.trim();
+            if (!username || !pwd || !name) return alert('Vui lòng nhập username, mật khẩu và họ tên');
+            if (users.some(x => x.username === username)) return alert('Username đã tồn tại');
+            const id = nextId(users);
+            const u = { id, username, pwd, role: 'customer', name, phone, address, registeredAt: new Date().toISOString() };
+            users.push(u); save(LS_USERS, users);
+            alert('Đăng ký thành công. Vui lòng đăng nhập.'); showAuth('login');
+        }
+
+        function logout() { currentUser = null; renderAuthArea(); renderApp(); }
+
+        // ------------------- TABS & ROUTING -------------------
+        function setTabs(tabs) {
+            const t = $('tabs'); t.innerHTML = '';
+            tabs.forEach(tab => {
+                const b = document.createElement('button'); b.className = 'tab-btn'; b.textContent = tab.label; b.onclick = () => { document.querySelectorAll('.tab-btn').forEach(x => x.classList.remove('active')); b.classList.add('active'); tab.render(); };
+                t.appendChild(b);
+            });
+            // activate first
+            if (t.firstChild) t.firstChild.click();
+        }
+
+        function renderApp() {
+            renderAuthArea();
+            // Determine tabs by role
+            if (!currentUser) {
+                // public: show shop + login prompt
+                setTabs([
+                    { label: 'Sản phẩm', render: renderShop },
+                    { label: 'Giỏ hàng', render: () => { alert('Vui lòng đăng nhập để dùng giỏ hàng'); } },
+                    { label: 'Đăng nhập', render: () => openAuthModal('login') }
+                ]);
+            } else if (currentUser.role === 'customer') {
+                setTabs([
+                    { label: 'Sản phẩm', render: renderShop },
+                    { label: 'Giỏ hàng', render: renderCartTab },
+                    { label: 'Đơn hàng', render: renderMyOrders },
+                    { label: 'Hồ sơ', render: renderProfile }
+                ]);
+            } else if (currentUser.role === 'admin') {
+                setTabs([
+                    { label: 'Dashboard', render: renderAdminDashboard },
+                    { label: 'Khách hàng & Đơn hàng', render: renderAdminCustomers },
+                    { label: 'Nhà cung cấp', render: renderAdminSuppliers },
+                    { label: 'Sản phẩm', render: renderShopAdmin },
+                    { label: 'Doanh thu', render: renderAdminRevenue }
+                ]);
+            }
+        }
+
+        // ------------------- SHOP (for customers & guest) -------------------
+        function renderShop() {
+            const out = document.getElementById('tab-content'); out.innerHTML = '';
+            const card = document.createElement('section'); card.className = 'card';
+            card.innerHTML = `
+        <h2>Tất cả sản phẩm</h2>
+        <div style="display:flex;gap:8px;align-items:center;margin:12px 0">
+          <input id="search-q" placeholder="Tìm kiếm..." style="flex:1">
+          <select id="filter-category"><option value="">--Loại--</option><option>Thời trang</option><option>Giày dép</option></select>
+          <button onclick="renderShop()" class="ghost small">Lọc</button>
+        </div>
+        <div class="product-grid" id="product-grid"></div>
+      `;
+            out.appendChild(card);
+
+            const grid = card.querySelector('#product-grid');
+            const q = (card.querySelector('#search-q').value || '').toLowerCase();
+            const cat = card.querySelector('#filter-category').value;
+            const list = products.filter(p => (p.name.toLowerCase().includes(q) || p.brand?.toLowerCase().includes(q)) && (!cat || p.category === cat));
+            list.forEach(p => {
+                const el = document.createElement('div'); el.className = 'product-card';
+                el.innerHTML = `
+          <img src="${p.image || 'https://via.placeholder.com/300'}" alt="">
+          <h4 style="margin:8px 0">${p.name}</h4>
+          <div class="muted">${p.brand || ''} • ${p.category || ''}</div>
+          <div style="margin:6px 0;font-weight:600">${formatCurrency(p.price)} VNĐ</div>
+          <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
+           <button class="small">Chi tiết</button>
+<button class="small ghost">Thêm vào giỏ</button>
+
+          </div>
+        `;
+                grid.appendChild(el);
+            });
+        }
+
+        function renderShopAdmin() {
+            // Admin can see product list and edit stock & supplier mapping
+            const out = $('tab-content'); out.innerHTML = '';
+            const card = document.createElement('section'); card.className = 'card';
+            card.innerHTML = `<h2>Quản lý sản phẩm</h2><div id="prod-admin-list"></div>`;
+            out.appendChild(card);
+            const listEl = card.querySelector('#prod-admin-list');
+            const rows = products.map(p => `<tr><td>${p.id}</td><td>${p.name}</td><td>${p.brand || ''}</td><td>${p.category || ''}</td><td>${formatCurrency(p.price)}</td><td>${p.stock}</td><td>${getSupplierName(p.supplierId) || '-'}</td><td><button onclick="adminEditProduct(${p.id})" class='small'>Sửa</button></td></tr>`);
+            listEl.innerHTML = `<table><thead><tr><th>ID</th><th>Tên</th><th>Thương hiệu</th><th>Loại</th><th>Giá</th><th>Stock</th><th>Nhà cung cấp</th><th>Hành động</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
+        }
+
+        function adminEditProduct(id) {
+            const p = products.find(x => x.id === id); if (!p) return; const modal = document.createElement('div'); modal.className = 'modal-overlay';
+            modal.innerHTML = `<div class="modal-content"><h3>Sửa sản phẩm</h3>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <input id="adm-name" value="${p.name}">
+          <input id="adm-brand" value="${p.brand || ''}">
+          <input id="adm-cat" value="${p.category || ''}">
+          <input id="adm-price" type="number" value="${p.price}">
+          <input id="adm-stock" type="number" value="${p.stock}">
+          <select id="adm-supplier">${suppliers.map(s => `<option value="${s.id}" ${s.id === p.supplierId ? 'selected' : ''}>${s.name}</option>`)}</select>
+        </div>
+        <div style="text-align:right;margin-top:12px"><button class="ghost" onclick="this.closest('.modal-overlay').remove()">Hủy</button> <button onclick="saveAdminProduct(${p.id})">Lưu</button></div>
+      </div>`;
+            document.body.appendChild(modal);
+        }
+        function saveAdminProduct(id) {
+            const p = products.find(x => x.id === id); if (!p) return; p.name = $('adm-name').value.trim(); p.brand = $('adm-brand').value.trim(); p.category = $('adm-cat').value.trim(); p.price = Number($('adm-price').value) || 0; p.stock = Number($('adm-stock').value) || 0; p.supplierId = Number($('adm-supplier').value) || null; save(LS_PRODUCTS, products); document.querySelector('.modal-overlay').remove(); renderApp(); alert('Đã lưu');
+        }
+
+        // ------------------- Product Modal + Add to Cart -------------------
+        function openProductModal(id) {
+            const p = products.find(x => x.id === id); if (!p) return; const modal = document.createElement('div'); modal.className = 'modal-overlay';
+            modal.innerHTML = `<div class='modal-content'><h3>${p.name}</h3><img src='${p.image || "https://via.placeholder.com/400"}' style='width:100%;height:180px;object-fit:cover;border-radius:6px'>
+        <p><strong>Giá:</strong> ${formatCurrency(p.price)} VNĐ</p>
+        <p><strong>Tồn kho:</strong> ${p.stock}</p>
+        <p><strong>Nhà cung cấp:</strong> ${getSupplierName(p.supplierId) || '-'}</p>
+        <div style='display:flex;gap:8px;align-items:center;margin-top:10px'><input id='pm-qty' type='number' value='1' min='1' style='width:80px'><button onclick='addToCartFromModal(${p.id})'>Thêm vào giỏ</button><button class='ghost' onclick="this.closest('.modal-overlay').remove()">Đóng</button></div>
+      </div>`;
+            document.body.appendChild(modal);
+        }
+        function openAddToCart(id) { if (!currentUser) return openAuthModal('login'); openProductModal(id); }
+        function addToCartFromModal(id) { const qty = Number($('pm-qty').value) || 1; addToCart(String(currentUser.id), id, qty); document.querySelector('.modal-overlay').remove(); alert('Đã thêm vào giỏ'); }
+
+        function addToCart(userId, productId, qty = 1, size = 'One Size') {
+            if (!carts[userId]) carts[userId] = [];
+            const p = products.find(x => x.id === productId); if (!p) return alert('Sản phẩm không tồn tại');
+            const existing = carts[userId].find(it => it.productId === productId && it.size === size);
+            const inCart = existing ? existing.qty : 0;
+            if (inCart + qty > p.stock) return alert('Không đủ tồn kho');
+            if (existing) existing.qty += qty; else carts[userId].push({ productId, qty, size, selected: true });
+        }
+
+        // ------------------- CART (with checkbox selection) -------------------
+        let currentCartUser = null;
+        function renderCartTab() {
+            if (!currentUser) return openAuthModal('login'); currentCartUser = String(currentUser.id);
+            const out = $('tab-content'); out.innerHTML = '';
+            const card = document.createElement('section'); card.className = 'card';
+            card.innerHTML = `<h2>Giỏ hàng của ${currentUser.name}</h2><div id='cart-contents'></div><div style='margin-top:12px;text-align:right' id='cart-actions'></div>`;
+            out.appendChild(card);
+            renderCartContents();
+        }
+        function renderCartContents() {
+            const list = carts[currentCartUser] || []; const cont = $('cart-contents'); cont.innerHTML = ''; if (!list.length) return cont.innerHTML = '<div>Giỏ rỗng</div>';
+            const tbl = document.createElement('table'); tbl.innerHTML = `<thead><tr><th><input id='select-all' type='checkbox'></th><th>Mã</th><th>Sản phẩm</th><th>Size</th><th>Số lượng</th><th>Đơn giá</th><th>Thành tiền</th><th></th></tr></thead><tbody></tbody>`;
+            const tbody = tbl.querySelector('tbody');
+            list.forEach((it, idx) => {
+                const p = products.find(x => x.id === it.productId) || { name: '[?]', price: 0 };
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td><input class='select-item' data-idx='${idx}' type='checkbox' ${it.selected ? 'checked' : ''}></td>
+          <td>${it.productId}</td>
+          <td>${p.name}</td>
+          <td>${it.size || '-'}</td>
+          <td><input value='${it.qty}' style='width:60px' onchange="changeCartQty('${currentCartUser}', ${it.productId}, ${idx}, this.value)"></td>
+          <td>${formatCurrency(p.price)}</td>
+          <td>${formatCurrency(p.price * it.qty)}</td>
+          <td><button class='ghost' onclick="removeCartItem('${currentCartUser}', ${it.productId}, ${idx})">Xóa</button></td>`;
+                tbody.appendChild(tr);
+            });
+            cont.appendChild(tbl);
+            document.getElementById('select-all').addEventListener('change', function () { const checked = this.checked; document.querySelectorAll('.select-item').forEach(cb => cb.checked = checked); carts[currentCartUser].forEach(it => it.selected = checked); renderCartActions(); });
+            document.querySelectorAll('.select-item').forEach(cb => cb.addEventListener('change', function () { const idx = Number(this.dataset.idx); carts[currentCartUser][idx].selected = this.checked; renderCartActions(); }));
+            renderCartActions();
+        }
+        function renderCartActions() {
+            const act = $('cart-actions'); const list = carts[currentCartUser] || []; const selected = list.filter(it => it.selected);
+            const total = selected.reduce((s, it) => { const p = products.find(x => x.id === it.productId) || { price: 0 }; return s + p.price * it.qty; }, 0);
+            act.innerHTML = `<div style='display:flex;justify-content:space-between;align-items:center;gap:12px'><div>Tổng (đã chọn): <strong>${formatCurrency(total)} VNĐ</strong></div><div><button onclick='checkoutSelected()'>Thanh toán các mục đã chọn</button><button class='ghost' onclick='clearCart()'>Xóa toàn bộ</button></div></div>`;
+        }
+        function changeCartQty(userId, productId, idx, val) { const list = carts[userId]; if (!list) return; const newQty = Math.max(1, parseInt(val) || 1); const p = products.find(x => x.id === productId); if (p && newQty > p.stock) return alert('Không đủ tồn kho'); list[idx].qty = newQty; renderCartContents(); }
+        function removeCartItem(userId, productId, idx) { carts[userId].splice(idx, 1); renderCartContents(); }
+        function clearCart() { if (!confirm('Xóa toàn bộ giỏ?')) return; carts[currentCartUser] = []; renderCartContents(); }
+
+        function checkoutSelected() {
+            const list = carts[currentCartUser] || []; const sel = list.filter(it => it.selected); if (!sel.length) return alert('Chọn ít nhất 1 sản phẩm để thanh toán');
+            if (!confirm('Xác nhận thanh toán các mục đã chọn?')) return;
+            // validate stock
+            for (const it of sel) { const p = products.find(x => x.id === it.productId); if (!p || p.stock < it.qty) return alert(`Sản phẩm ${p ? p.name : it.productId} không đủ tồn kho`); }
+            // deduct stock, create order
+            const items = sel.map(it => { const p = products.find(x => x.id === it.productId); p.stock -= it.qty; return { productId: it.productId, qty: it.qty, size: it.size, price: p.price }; });
+            const total = items.reduce((s, i) => s + i.price * i.qty, 0);
+            const id = nextId(orders); const date = new Date().toISOString().slice(0, 10);
+            orders.push({ id, userId: Number(currentUser.id), items, total, date }); save(LS_PRODUCTS, products); save(LS_ORDERS, orders);
+            // remove selected items from cart
+            carts[currentCartUser] = list.filter(it => !it.selected);
+            renderCartContents(); alert('Thanh toán thành công — mã đơn: ' + id);
+        }
+
+        // ------------------- Orders (customer) -------------------
+        function renderMyOrders() {
+            const out = $('tab-content'); out.innerHTML = ''; const card = document.createElement('section'); card.className = 'card'; card.innerHTML = `<h2>Đơn hàng của ${currentUser.name}</h2><div id='my-orders-list'></div>`; out.appendChild(card);
+            const my = orders.filter(o => o.userId === currentUser.id);
+            const rows = my.map(o => `<tr><td>${o.id}</td><td>${o.date}</td><td>${o.items.map(it => { const p = products.find(x => x.id === it.productId) || { name: '[?]' }; return p.name + ' x' + it.qty; }).join('<br>')}</td><td>${formatCurrency(o.total)}</td></tr>`);
+            card.querySelector('#my-orders-list').innerHTML = my.length ? `<table><thead><tr><th>ID</th><th>Ngày</th><th>Sản phẩm</th><th>Tổng</th></tr></thead><tbody>${rows.join('')}</tbody></table>` : '<div>Không có đơn hàng</div>';
+        }
+
+        // ------------------- PROFILE -------------------
+        function renderProfile() {
+            const out = $('tab-content'); out.innerHTML = ''; const card = document.createElement('section'); card.className = 'card'; card.innerHTML = `
+      <h2>Hồ sơ cá nhân</h2>
+      <div style="display:flex;gap:12px;flex-direction:column;max-width:520px">
+        <input id='pf-name' placeholder='Họ tên' value='${currentUser.name || ''}'>
+        <input id='pf-phone' placeholder='Số điện thoại' value='${currentUser.phone || ''}'>
+        <input id='pf-address' placeholder='Địa chỉ' value='${currentUser.address || ''}'>
+        <div style='text-align:right'><button onclick='saveProfile()'>Lưu</button></div>
+      </div>
+    `; out.appendChild(card);
+        }
+        function saveProfile() { currentUser.name = $('pf-name').value.trim(); currentUser.phone = $('pf-phone').value.trim(); currentUser.address = $('pf-address').value.trim(); const idx = users.findIndex(x => x.id === currentUser.id); if (idx >= 0) users[idx] = currentUser; save(LS_USERS, users); alert('Đã lưu'); renderAuthArea(); }
+
+        // ------------------- ADMIN DASHBOARD & MANAGEMENT -------------------
+        function renderAdminDashboard() {
+            const out = $('tab-content'); out.innerHTML = ''; const card = document.createElement('section'); card.className = 'card';
+            const totalRevenue = orders.reduce((s, o) => s + o.total, 0);
+            const totalOrders = orders.length; const totalCustomers = users.filter(u => u.role === 'customer').length; const totalProducts = products.length;
+            card.innerHTML = `<h2>Dashboard</h2><div class='stats'><div class='stat'><div class='muted'>Tổng doanh thu</div><div style='font-size:18px'>${formatCurrency(totalRevenue)} VNĐ</div></div><div class='stat'><div class='muted'>Số đơn hàng</div><div style='font-size:18px'>${totalOrders}</div></div><div class='stat'><div class='muted'>Khách hàng</div><div style='font-size:18px'>${totalCustomers}</div></div><div class='stat'><div class='muted'>Sản phẩm</div><div style='font-size:18px'>${totalProducts}</div></div></div>`;
+            out.appendChild(card);
+        }
+
+        function renderAdminCustomers() {
+            const out = $('tab-content'); out.innerHTML = ''; const card = document.createElement('section'); card.className = 'card';
+            const custs = users.filter(u => u.role === 'customer');
+            card.innerHTML = `<h2>Khách hàng & Đơn hàng</h2><div id='admin-cust-list'></div>`; out.appendChild(card);
+            const rows = custs.map(c => {
+                const custOrders = orders.filter(o => o.userId === c.id);
+                return `<tr><td>${c.id}</td><td>${c.username}</td><td>${c.name}</td><td>${c.phone || ''}</td><td>${formatCurrency(custOrders.reduce((s, o) => s + o.total, 0))}</td><td><button onclick="viewCustomerOrders(${c.id})" class='small'>Xem đơn</button></td></tr>`;
+            });
+            card.querySelector('#admin-cust-list').innerHTML = `<table><thead><tr><th>ID</th><th>Username</th><th>Tên</th><th>Phone</th><th>Đã tiêu</th><th></th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
+        }
+        function viewCustomerOrders(userId) {
+            const u = users.find(x => x.id === userId); const userOrders = orders.filter(o => o.userId === userId);
+            const modal = document.createElement('div'); modal.className = 'modal-overlay'; modal.innerHTML = `<div class='modal-content'><h3>Đơn hàng của ${u.name}</h3>${userOrders.length ? `<table><thead><tr><th>ID</th><th>Ngày</th><th>Sản phẩm</th><th>Tổng</th></tr></thead><tbody>${userOrders.map(o => `<tr><td>${o.id}</td><td>${o.date}</td><td>${o.items.map(it => { const p = products.find(x => x.id === it.productId) || { name: '[?]' }; return p.name + ' x' + it.qty }).join('<br>')}</td><td>${formatCurrency(o.total)}</td></tr>`).join('')}</tbody></table>` : '<div>Không có đơn hàng</div>'}<div style='text-align:right;margin-top:12px'><button class='ghost' onclick="this.closest('.modal-overlay').remove()">Đóng</button></div></div>`;
+            document.body.appendChild(modal);
+        }
+
+        // ------------------- SUPPLIERS (admin) -------------------
+        function renderAdminSuppliers() { const out = $('tab-content'); out.innerHTML = ''; const card = document.createElement('section'); card.className = 'card'; card.innerHTML = `<h2>Nhà cung cấp</h2><div style='display:flex;gap:8px;margin-bottom:12px'><input id='sup-name' placeholder='Tên công ty'><input id='sup-factor' placeholder='Tỉ lệ giá nhập (0..1)'><button onclick='addSupplier()'>Thêm</button></div><div id='sup-list'></div>`; out.appendChild(card); renderSupplierList(); }
+        function renderSupplierList() { const el = $('sup-list'); const rows = suppliers.map(s => `<tr><td>${s.id}</td><td>${s.name}</td><td>${s.importPriceFactor}</td><td><button onclick="editSupplier(${s.id})" class='small'>Sửa</button></td></tr>`); el.innerHTML = `<table><thead><tr><th>ID</th><th>Tên</th><th>Factor</th><th></th></tr></thead><tbody>${rows.join('')}</tbody></table>`; }
+        function addSupplier() { const name = $('sup-name').value.trim(); const f = parseFloat($('sup-factor').value); if (!name || isNaN(f)) return alert('Nhập tên và factor'); const id = nextId(suppliers); suppliers.push({ id, name, importPriceFactor: f }); save(LS_SUPPLIERS, suppliers); renderSupplierList(); alert('Thêm nhà cung cấp'); }
+        function editSupplier(id) { const s = suppliers.find(x => x.id === id); if (!s) return; const modal = document.createElement('div'); modal.className = 'modal-overlay'; modal.innerHTML = `<div class='modal-content'><h3>Sửa nhà cung cấp</h3><input id='es-name' value='${s.name}'><input id='es-factor' value='${s.importPriceFactor}'><div style='text-align:right;margin-top:12px'><button class='ghost' onclick='this.closest(\'.modal-overlay\').remove()'>Hủy</button><button onclick='saveSupplier(${s.id})'>Lưu</button></div></div>`; document.body.appendChild(modal); }
+        function saveSupplier(id) { const s = suppliers.find(x => x.id === id); if (!s) return; s.name = $('es-name').value.trim(); s.importPriceFactor = parseFloat($('es-factor').value) || 0; save(LS_SUPPLIERS, suppliers); document.querySelector('.modal-overlay').remove(); renderAdminSuppliers(); }
+
+        function getSupplierName(id) { const s = suppliers.find(x => x.id === id); return s ? s.name : null; }
+
+        // ------------------- REVENUE / PROFIT (admin) -------------------
+        function renderAdminRevenue() {
+            const out = $('tab-content'); out.innerHTML = ''; const card = document.createElement('section'); card.className = 'card';
+            // compute revenue and cost
+            let revenue = 0; let cost = 0;
+            orders.forEach(o => { revenue += o.total; o.items.forEach(it => { const p = products.find(x => x.id === it.productId) || {}; const s = suppliers.find(x => x.id === p.supplierId) || {}; const importFactor = s.importPriceFactor || 0.6; const importPrice = (p.price * importFactor); cost += importPrice * it.qty; }); });
+            const profit = revenue - cost;
+            card.innerHTML = `<h2>Doanh thu & Lợi nhuận</h2><div class='stats'><div class='stat'><div class='muted'>Doanh thu</div><div style='font-size:18px'>${formatCurrency(revenue)} VNĐ</div></div><div class='stat'><div class='muted'>Chi phí nhập ước tính</div><div style='font-size:18px'>${formatCurrency(cost)} VNĐ</div></div><div class='stat'><div class='muted'>Lợi nhuận</div><div style='font-size:18px'>${formatCurrency(profit)} VNĐ</div></div></div>`;
+            out.appendChild(card);
+        }
+
+        // ------------------- UTIL / INIT -------------------
+        function initDefaults() { save(LS_SUPPLIERS, suppliers); save(LS_PRODUCTS, products); save(LS_USERS, users); save(LS_ORDERS, orders); }
+        initDefaults(); renderAuthArea(); renderApp();
+
+        // expose some functions to global for inline onclick handlers
+        window.openAuthModal = openAuthModal;
+        window.openProductModal = openProductModal;
+        window.openAddToCart = openAddToCart;
+        window.addToCartFromModal = addToCartFromModal;
+        window.addToCart = addToCart;
+        window.renderApp = renderApp;
+        window.viewCustomerOrders = viewCustomerOrders;
+        window.adminEditProduct = adminEditProduct;
+        window.saveAdminProduct = saveAdminProduct;
+        window.openTab = function (tabLabel) { Array.from(document.querySelectorAll('.tab-btn')).find(b => b.textContent === tabLabel)?.click(); };
+
+    </script>
+</body>
+
+</html>

@@ -12,6 +12,7 @@
             --accent: #83ce1a;
             --muted: #5aae10;
             --danger: #ef4444;
+            --header-grad: linear-gradient(90deg, #6d6c86 0%, #6d28d9 100%);
         }
 
         * {
@@ -27,7 +28,7 @@
 
         /* ---------- HEADER ---------- */
         header {
-            background: linear-gradient(90deg, #6d6c86 0%, #6d28d9 100%);
+            background: var(--header-grad);
             color: white;
             padding: 18px 24px;
         }
@@ -64,6 +65,7 @@
             display: flex;
             gap: 8px;
             margin: 8px 0;
+            flex-wrap: wrap;
         }
 
         .tab-btn {
@@ -279,11 +281,19 @@
 
         .modal .panel {
             background: white;
-            padding: 16px;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 600px;
+            padding: 12px;
+            /* vừa phải */
+            border-radius: 10px;
+            width: 100%;
+            max-width: 420px;
+            /* giảm chiều rộng modal */
+            box-sizing: border-box;
+            overflow: auto;
+            /* cuộn khi nội dung cao */
+            max-height: 80vh;
+            /* giới hạn chiều cao tránh che ảnh / layout */
         }
+
 
         @media (max-width: 900px) {
             .product-layout {
@@ -411,9 +421,9 @@
         .modal-content {
             background: white;
             border-radius: 12px;
-            padding: 20px;
-            width: 350px;
-            max-width: 90%;
+            padding: 16px;
+            width: 420px;
+            max-width: 92%;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             animation: zoomIn 0.25s ease;
         }
@@ -429,42 +439,1541 @@
                 opacity: 1;
             }
         }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .small-muted {
+            font-size: 13px;
+            color: #e6ffe0;
+        }
+
+        .modal-overlay {
+            /* existing */
+        }
+
+        .modal-content {
+            /* existing */
+        }
+
+        /* TOAST */
+        .toast-container {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 1200;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+        }
+
+        .toast {
+            min-width: 200px;
+            max-width: 320px;
+            background: #111;
+            color: #fff;
+            padding: 10px 14px;
+            border-radius: 10px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+            transform: translateY(-8px);
+            opacity: 0;
+            transition: transform .25s ease, opacity .25s ease;
+            pointer-events: auto;
+            font-weight: 600;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.error {
+            background: #ef4444;
+        }
+
+        /* flying image animation (mua nhanh) */
+        .flying-img {
+            position: fixed;
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+            transition: transform .8s cubic-bezier(.2, .9, .2, 1), opacity .6s linear;
+            z-index: 2000;
+            pointer-events: none;
+        }
+
+        .modal .panel img {
+            width: 100%;
+            height: auto;
+            max-height: 320px;
+            object-fit: contain;
+            border-radius: 6px;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .modal .panel {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 480px;
+            /* giảm chiều rộng để không che ảnh */
+            box-sizing: border-box;
+        }
     </style>
     <script>
-        function showProductInfo(productId) {
-            const p = products.find(x => x.id === productId);
-            if (!p) return alert("Không tìm thấy sản phẩm!");
+        // ---------- AUTH & USER STATE ----------
+        // users: id, username, password (plain for demo), role: 'admin'|'customer', name, address, phone
+        let users = [
+            { id: 1, username: 'admin', password: 'admin123', role: 'admin', name: 'Admin (demo)', address: '', phone: '' },
+            { id: 2, username: 'user1', password: 'user1', role: 'customer', name: 'Nguyễn Văn A', address: 'Hà Nội', phone: '0900000001' }
+        ];
+        let userIdCounter = Math.max(...users.map(u => u.id)) || 1;
+        let currentUser = null; // {id,...} when logged in
 
-            const info = `
-        <div style="padding:16px;line-height:1.6;">
-            <h3>${p.ten}</h3>
-            <p><b>Mã sản phẩm:</b> ${p.id}</p>
-            <p><b>Giá:</b> ${p.gia.toLocaleString()} VNĐ</p>
-            <p><b>Loại hàng:</b> ${p.loai}</p>
-            <p><b>Thương hiệu:</b> ${p.thuongHieu}</p>
-            <p><b>Mô tả:</b> ${p.moTa || "Chưa có mô tả"}</p>
-            <p><b>Kích cỡ:</b> ${p.kichCo || "Tùy chọn"}</p>
-            <p><b>Màu sắc:</b> ${p.mauSac || "Đa dạng"}</p>
-            <p><b>Chất liệu:</b> ${p.chatLieu || "Không rõ"}</p>
-        </div>
-    `;
+        // ---------- SAMPLE DATA & STATE ----------
+        let products = [
+            // keep same product shape, add optional supplierId and costPrice
+            { id: 1, name: "Áo thun nam", brand: "Louis Vuitton", category: "Thời trang", price: 120000, costPrice: 70000, stock: 10, image: "ao_thun.jpg", description: "Áo thun nam cao cấp, chất vải mềm mịn, thoáng mát, phù hợp cho mùa hè.", size: "M, L, XL", color: "Đen", material: "Cotton", supplierId: 1 },
+            { id: 2, name: "Quần jean", brand: "Routine", category: "Thời trang", price: 350000, costPrice: 200000, stock: 8, image: "quan_jean.jpg", description: "Quần jean form slim-fit năng động, dễ phối đồ.", size: "28, 30, 32, 34", color: "Xanh đậm", material: "Denim", supplierId: 2 },
+            { id: 3, name: "Giày sneaker", brand: "MLB", category: "Giày dép", price: 450000, costPrice: 250000, stock: 5, image: "giay_sneaker.jpg", description: "Giày sneaker trẻ trung, đế cao su bền chắc, phù hợp cả nam và nữ.", size: "38-43", color: "Trắng", material: "Da tổng hợp", supplierId: 2 },
+            { id: 4, name: "Mũ lưỡi trai", brand: "MLB", category: "Phụ kiện", price: 150000, costPrice: 60000, stock: 12, image: "mu_luoi_trai.jpg", description: "Mũ lưỡi trai MLB phong cách thể thao, có thể điều chỉnh kích cỡ.", size: "Free size", color: "Đen", material: "Vải cotton", supplierId: 2 },
+            { id: 5, name: "Áo khoác nam", brand: "Zara", category: "Thời trang", price: 550000, costPrice: 330000, stock: 7, image: "ao_khoac.jpg", description: "Áo khoác thời trang nam chống gió, giữ ấm tốt.", size: "M, L, XL", color: "Xanh rêu", material: "Polyester", supplierId: 3 },
+            { id: 6, name: "Túi xách tay", brand: "Gucci", category: "Phụ kiện", price: 950000, costPrice: 500000, stock: 3, image: "tui_xach.jpg", description: "Túi xách nữ thời trang Gucci sang trọng, phù hợp đi chơi và dự tiệc.", size: "25x30cm", color: "Nâu", material: "Da thật", supplierId: 3 },
+            { id: 7, name: "Đồng hồ nam", brand: "Tissot", category: "Phụ kiện", price: 1250000, costPrice: 700000, stock: 4, image: "dong_ho.jpg", description: "Đồng hồ Tissot nam dây da, chống nước, thiết kế sang trọng.", size: "42mm", color: "Bạc", material: "Thép không gỉ & da", supplierId: 4 },
+            { id: 8, name: "Tai nghe Bluetooth", brand: "Sony", category: "Điện tử", price: 780000, costPrice: 450000, stock: 6, image: "tai_nghe.jpg", description: "Tai nghe Bluetooth chống ồn, pin 12h, âm thanh trung thực.", size: "Nhỏ gọn", color: "Đen", material: "Nhựa cao cấp", supplierId: 4 },
+            { id: 9, name: "Balo laptop", brand: "Xiaomi", category: "Phụ kiện", price: 320000, costPrice: 150000, stock: 9, image: "balo.jpg", description: "Balo chống nước, có ngăn riêng cho laptop 15 inch.", size: "45x30x15cm", color: "Xám", material: "Vải Oxford", supplierId: 3 },
+            { id: 10, name: "Áo sơ mi nữ", brand: "An Phước", category: "Thời trang", price: 250000, costPrice: 120000, stock: 15, image: "ao_somi.jpg", description: "Áo sơ mi nữ công sở thanh lịch, vải mềm, dễ ủi.", size: "S, M, L", color: "Trắng", material: "Cotton lụa", supplierId: 1 }
+        ];
 
-            const modal = document.createElement("div");
-            modal.className = "modal-overlay";
+        let suppliers = [
+            { id: 1, company: 'Công ty A', contact: 'a@cc.com', defaultCost: 80000 },
+            { id: 2, company: 'Công ty B', contact: 'b@cc.com', defaultCost: 200000 },
+            { id: 3, company: 'Công ty C', contact: 'c@cc.com', defaultCost: 250000 },
+            { id: 4, company: 'Công ty D', contact: 'd@cc.com', defaultCost: 400000 }
+        ];
+        let supplierIdCounter = Math.max(...suppliers.map(s => s.id)) || 1;
+
+        let orders = []; // {id, customerId, productId, qty, total, date, size}
+        let orderId = 0;
+
+        // carts: map userId -> [{productId, qty, size}]
+        let carts = {};
+
+        // helpers
+        function $(id) { return document.getElementById(id) }
+        function formatCurrency(n) { return Number(n).toLocaleString('vi-VN') }
+
+        // ---------- AUTH UI ----------
+        function renderHeaderUser() {
+            const container = $('header-user');
+            if (!container) return;
+            container.innerHTML = '';
+            if (currentUser) {
+                const span = document.createElement('div');
+                span.style.display = 'flex';
+                span.style.alignItems = 'center';
+                span.style.gap = '10px';
+                span.innerHTML = `<div class="small-muted">Người dùng: <strong>${currentUser.name || currentUser.username}</strong> (${currentUser.role})</div>
+                    <button onclick="logout()" style="padding:6px 10px;background:#fb7185;border-radius:8px;color:white">Đăng xuất</button>`;
+                container.appendChild(span);
+            } else {
+                const btnLogin = document.createElement('button');
+                btnLogin.textContent = 'Đăng nhập / Đăng ký';
+                btnLogin.onclick = showAuthModal;
+                container.appendChild(btnLogin);
+            }
+        }
+
+        function showAuthModal() {
+            // modal with two tabs: login / register
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
             modal.innerHTML = `
-        <div class="modal-content">
-            ${info}
-            <button onclick="this.parentElement.parentElement.remove()" style="margin-top:10px;">Đóng</button>
+        <div class="modal-content" style="max-width:520px;">
+            <h3 style="margin-top:0">Đăng nhập / Đăng ký</h3>
+            <div style="display:flex;gap:8px;margin-bottom:12px;">
+                <button id="auth-login-tab" style="flex:1;padding:8px;border-radius:8px;">Đăng nhập</button>
+                <button id="auth-register-tab" style="flex:1;padding:8px;border-radius:8px;">Đăng ký</button>
+            </div>
+            <div id="auth-body">
+                <!-- login form default -->
+                <div id="auth-login">
+                    <label>Username</label>
+                    <input id="login-username" style="width:100%;padding:8px;border-radius:8px;border:1px solid #e6e9f2;">
+                    <label>Mật khẩu</label>
+                    <input id="login-password" type="password" style="width:100%;padding:8px;border-radius:8px;border:1px solid #e6e9f2;">
+                    <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end;">
+                        <button onclick="doLogin()">Đăng nhập</button>
+                        <button class="ghost" onclick="document.querySelector('.modal-overlay').remove()">Hủy</button>
+                    </div>
+                </div>
+            </div>
         </div>
     `;
             document.body.appendChild(modal);
+            $('auth-login-tab').addEventListener('click', () => {
+                $('auth-body').innerHTML = `
+            <div id="auth-login">
+                <label>Username</label>
+                <input id="login-username" style="width:100%;padding:8px;border-radius:8px;border:1px solid #e6e9f2;">
+                <label>Mật khẩu</label>
+                <input id="login-password" type="password" style="width:100%;padding:8px;border-radius:8px;border:1px solid #e6e9f2;">
+                <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end;">
+                    <button onclick="doLogin()">Đăng nhập</button>
+                    <button class="ghost" onclick="document.querySelector('.modal-overlay').remove()">Hủy</button>
+                </div>
+            </div>`;
+            });
+            $('auth-register-tab').addEventListener('click', () => {
+                $('auth-body').innerHTML = `
+            <div id="auth-register">
+                <label>Tài khoản (username)</label>
+                <input id="reg-username" style="width:100%;padding:8px;border-radius:8px;border:1px solid #e6e9f2;">
+                <label>Mật khẩu</label>
+                <input id="reg-password" type="password" style="width:100%;padding:8px;border-radius:8px;border:1px solid #e6e9f2;">
+                <label>Họ tên</label>
+                <input id="reg-name" style="width:100%;padding:8px;border-radius:8px;border:1px solid #e6e9f2;">
+                <label>Địa chỉ</label>
+                <input id="reg-address" style="width:100%;padding:8px;border-radius:8px;border:1px solid #e6e9f2;">
+                <label>Số điện thoại</label>
+                <input id="reg-phone" type="tel" pattern="[0-9]{7,15}" placeholder="Chỉ nhập chữ số" style="width:100%;padding:8px;border-radius:8px;border:1px solid #e6e9f2;">
+                <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end;">
+                    <button onclick="doRegister()">Đăng ký</button>
+                    <button class="ghost" onclick="document.querySelector('.modal-overlay').remove()">Hủy</button>
+                </div>
+            </div>`;
+            });
         }
 
+        function doRegister() {
+            const username = $('reg-username').value.trim();
+            const password = $('reg-password').value;
+            const name = $('reg-name').value.trim();
+            const address = $('reg-address').value.trim();
+            const phone = $('reg-phone').value.trim();
+            if (!username || !password || !name) return alert('Vui lòng nhập username, mật khẩu và họ tên');
+            if (users.find(u => u.username === username)) return alert('Username đã tồn tại');
+            userIdCounter++;
+            const u = { id: userIdCounter, username, password, role: 'customer', name, address, phone };
+            users.push(u);
+            currentUser = u;
+            document.querySelector('.modal-overlay').remove();
+            renderHeaderUser();
+            renderTabsForCurrentUser();
+            alert('Đăng ký thành công và đăng nhập tự động');
+        }
+
+        function doLogin() {
+            const username = $('login-username').value.trim();
+            const password = $('login-password').value;
+            const user = users.find(u => u.username === username && u.password === password);
+            if (!user) return alert('Sai username hoặc mật khẩu');
+            currentUser = user;
+            document.querySelector('.modal-overlay').remove();
+            renderHeaderUser();
+            renderTabsForCurrentUser();
+            if (!carts[currentUser.id]) carts[currentUser.id] = [];
+            alert('Đăng nhập thành công: ' + currentUser.name);
+        }
+
+        function logout() {
+            currentUser = null;
+            renderHeaderUser();
+            renderTabsForCurrentUser();
+            alert('Đã đăng xuất');
+        }
+
+        // ---------- TAB RENDERING BASED ON ROLE ----------
+        function renderTabsForCurrentUser() {
+            const tabsContainer = $('tabs-container');
+            tabsContainer.innerHTML = '';
+            const makeBtn = (label, tabId, active = false) => {
+                const b = document.createElement('button');
+                b.className = 'tab-btn' + (active ? ' active' : '');
+                b.dataset.tab = tabId;
+                b.textContent = label;
+                b.onclick = () => switchTab(tabId, b);
+                return b;
+            };
+            // Common customer view: Shop, Cart, Profile, Orders
+            if (!currentUser || currentUser.role === 'customer') {
+                tabsContainer.appendChild(makeBtn('Sản phẩm', 'shop', true));
+                tabsContainer.appendChild(makeBtn('Giỏ hàng', 'cart'));
+                tabsContainer.appendChild(makeBtn('Đơn hàng', 'orders'));
+                tabsContainer.appendChild(makeBtn('Thông tin cá nhân', 'profile'));
+            }
+            // Admin view: add a dedicated Products tab for admin; suppliers tab only manages suppliers
+            if (currentUser && currentUser.role === 'admin') {
+                tabsContainer.appendChild(makeBtn('Dashboard', 'admin-dashboard', true));
+                tabsContainer.appendChild(makeBtn('Sản phẩm', 'admin-products')); // admin product management
+                tabsContainer.appendChild(makeBtn('Người dùng', 'admin-users'));
+                tabsContainer.appendChild(makeBtn('Khách hàng', 'admin-customers'));
+                tabsContainer.appendChild(makeBtn('Nhà cung cấp', 'admin-suppliers'));
+                tabsContainer.appendChild(makeBtn('Thống kê doanh thu', 'admin-revenue'));
+            }
+            // Hide all tab contents then show first active
+            document.querySelectorAll('.tab-content').forEach(tc => tc.style.display = 'none');
+            // choose default
+            const activeBtn = tabsContainer.querySelector('.tab-btn.active') || tabsContainer.querySelector('.tab-btn');
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+                switchTab(activeBtn.dataset.tab, activeBtn, true);
+            }
+        }
+
+        function switchTab(tabId, btn, initializing) {
+            document.querySelectorAll('#tabs-container .tab-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(tc => tc.style.display = 'none');
+            const el = document.getElementById(tabId);
+            if (el) el.style.display = 'block';
+            // refresh specific content
+            if (tabId === 'shop') renderProducts();
+            if (tabId === 'cart') renderCartForUser(currentUser ? currentUser.id : null);
+            if (tabId === 'orders') renderOrders();
+            if (tabId === 'profile') renderProfile();
+            if (tabId === 'admin-dashboard') renderAdminDashboard();
+            if (tabId === 'admin-products') renderAdminProducts();
+            if (tabId === 'admin-customers') renderAdminCustomers();
+            if (tabId === 'admin-suppliers') renderAdminSuppliers();
+            if (tabId === 'admin-revenue') renderAdminRevenue();
+        }
+        function renderAdminProducts() {
+            const el = $('admin-products');
+            if (!el) return;
+            el.innerHTML = `
+                <h3>Quản lý Sản phẩm (Admin)</h3>
+                <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+                    <div style="flex:1;min-width:220px">
+                        <input id="admin-p-search" placeholder="Tìm theo tên / hãng" oninput="renderAdminProducts()" style="width:100%;padding:8px;border-radius:8px;border:1px solid #e6e9f2;">
+                    </div>
+                    <div>
+                        <button onclick="showAdminAddProductModal()">Thêm sản phẩm</button>
+                    </div>
+                </div>
+                <div id="admin-products-list"></div>
+            `;
+            // render list after markup
+            const container = $('admin-products-list');
+            const q = $('admin-p-search') ? $('admin-p-search').value.toLowerCase() : '';
+            const list = products.filter(p => !q || (p.name || '').toLowerCase().includes(q) || (p.brand || '').toLowerCase().includes(q));
+            if (!list.length) {
+                container.innerHTML = '<div>Không có sản phẩm</div>';
+                return;
+            }
+            const rows = list.map(p => {
+                const s = suppliers.find(x => x.id === p.supplierId) || {};
+                return `<div style="display:flex;gap:12px;align-items:center;padding:10px;border-bottom:1px solid #eee;">
+                    <div style="width:100px"><img src="${p.image || 'https://via.placeholder.com/100'}" style="width:100%;height:70px;object-fit:cover;border-radius:6px"></div>
+                    <div style="flex:1">
+                        <div style="font-weight:700">${p.name} <span style="color:#666;font-weight:600">(#${p.id})</span></div>
+                        <div style="font-size:13px;color:#666">${p.brand || '-'} — ${p.category || '-'}</div>
+                        <div style="margin-top:6px;font-size:13px;color:#2d6a4f">Giá bán: ${formatCurrency(p.price)} VNĐ — Giá nhập: ${formatCurrency(p.costPrice || s.defaultCost || 0)} VNĐ — Tồn: ${p.stock}</div>
+                        <div style="font-size:12px;color:#555;margin-top:6px">Nhà cung cấp: ${s.company || '-'}</div>
+                    </div>
+                    <div style="white-space:nowrap">
+                        <button onclick="showEditProductModal(${p.id})">Chỉnh sửa</button>
+                        <button class="ghost" onclick="removeProduct(${p.id})" style="background:#ef4444;color:white;margin-left:6px">Xóa</button>
+                    </div>
+                </div>`;
+            }).join('');
+            container.innerHTML = rows;
+        }
+        function renderAdminUsers() {
+            const el = $('admin-users-list');
+            if (!el) return;
+            // sort by role: admin, staff, customer
+            const roleOrder = r => (r === 'admin' ? 0 : (r === 'staff' ? 1 : 2));
+            const list = users.slice().sort((a, b) => {
+                const ra = roleOrder(a.role || 'customer'), rb = roleOrder(b.role || 'customer');
+                if (ra !== rb) return ra - rb;
+                return (a.id || 0) - (b.id || 0);
+            });
+            if (!list.length) { el.innerHTML = '<div>Không có người dùng</div>'; return; }
+
+            const rows = list.map(u => {
+                return `<tr>
+            <td>${u.id}</td>
+            <td>${u.username}</td>
+            <td>${u.role || 'customer'}</td>
+            <td>${u.name || '-'}</td>
+            <td>${u.phone || '-'}</td>
+            <td style="max-width:260px">${u.address || '-'}</td>
+            <td style="white-space:nowrap">
+                <button onclick="showEditUserModal(${u.id})">Sửa</button>
+                <button class="ghost" onclick="removeUser(${u.id})" style="background:#ef4444;color:white;margin-left:6px">Xóa</button>
+            </td>
+        </tr>`;
+            }).join('');
+
+            el.innerHTML = `<table>
+        <thead><tr><th>ID</th><th>Username</th><th>Vai trò</th><th>Họ tên</th><th>Điện thoại</th><th>Địa chỉ</th><th>Thao tác</th></tr></thead>
+        <tbody>${rows}</tbody>
+    </table>`;
+        }
+        function showAddUserModal(role) {
+            showModal(`
+        <h3>Thêm người dùng (${role})</h3>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+            <label>Username</label><input id="new-u-username" autocomplete="off">
+            <label>Mật khẩu</label><input id="new-u-password" type="password">
+            <label>Họ tên</label><input id="new-u-name">
+            <label>Địa chỉ</label><input id="new-u-address">
+            <label>Số điện thoại</label><input id="new-u-phone" type="tel" pattern="[0-9]{7,15}">
+            <div style="display:flex;gap:8px;justify-content:flex-end;">
+                <button class="ghost" onclick="closeModal()">Hủy</button>
+                <button onclick="saveNewUser('${role}')">Thêm</button>
+            </div>
+        </div>
+    `);
+        }
+        function saveNewUser(role) {
+            const username = $('new-u-username').value.trim();
+            const password = $('new-u-password').value;
+            const name = $('new-u-name').value.trim();
+            const address = $('new-u-address').value.trim();
+            const phone = $('new-u-phone').value.trim();
+            if (!username || !password || !name) { showToast('Vui lòng nhập username, mật khẩu và họ tên', true); return; }
+            if (users.find(u => u.username === username)) { showToast('Username đã tồn tại', true); return; }
+            userIdCounter++;
+            const u = { id: userIdCounter, username, password, role: role, name, address, phone };
+            users.push(u);
+            renderAdminUsers();
+            renderHeaderUser();
+            showToast('Đã thêm người dùng');
+            // close modal
+            try { closeModal(); } catch (e) { }
+            document.querySelectorAll('.modal-overlay').forEach(m => m.remove());
+        }
+        function showAdminAddProductModal() {
+            const supplierOptions = suppliers.map(s => `<option value="${s.id}">${s.company}</option>`).join('');
+            const brandOptions = ['Louis Vuitton', 'Routine', 'MLB', 'Gucci', 'Nike', 'Zara', 'Tissot', 'Sony', 'Xiaomi', 'An Phước'].map(b => `<option value="${b}">${b}</option>`).join('');
+            const categoryOptions = ['Thời trang', 'Giày dép', 'Phụ kiện', 'Điện tử'].map(c => `<option value="${c}">${c}</option>`).join('');
+            showModal(`
+                <h3>Thêm sản phẩm (Admin)</h3>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                    <label>Tên</label><input id="admin-new-p-name">
+                    <label>Thương hiệu</label>
+                    <select id="admin-new-p-brand">${brandOptions}</select>
+                    <label>Loại</label>
+                    <select id="admin-new-p-category">${categoryOptions}</select>
+                    <label>Giá bán</label><input id="admin-new-p-price" type="number" min="0" step="1">
+                    <label>Giá nhập (cost)</label><input id="admin-new-p-costPrice" type="number" min="0" step="1">
+                    <label>Số lượng tồn</label><input id="admin-new-p-stock" type="number" value="0" min="0" step="1">
+                    <label>Nhà cung cấp</label>
+                    <select id="admin-new-p-supplier">${supplierOptions}</select>
+                    <label>Ảnh (tên file hoặc url)</label><input id="admin-new-p-image">
+                    <label>Kích cỡ</label><input id="admin-new-p-size">
+                    <label>Mô tả</label><textarea id="admin-new-p-desc" style="min-height:80px"></textarea>
+                    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
+                        <button class="ghost" onclick="closeModal()">Hủy</button>
+                        <button onclick="saveAdminNewProduct()">Thêm sản phẩm</button>
+                    </div>
+                </div>
+            `);
+        }
+        function saveUserEdits(id) {
+            const u = users.find(x => x.id === id);
+            if (!u) { showToast('Không tìm thấy người dùng', true); return; }
+            const pwd = $('edit-u-password').value;
+            const name = $('edit-u-name').value.trim();
+            const address = $('edit-u-address').value.trim();
+            const phone = $('edit-u-phone').value.trim();
+            const role = $('edit-u-role').value;
+            if (pwd) u.password = pwd;
+            u.name = name;
+            u.address = address;
+            u.phone = phone;
+            u.role = role;
+            renderAdminUsers();
+            renderHeaderUser();
+            showToast('Đã lưu thông tin người dùng');
+            try { closeModal(); } catch (e) { }
+            document.querySelectorAll('.modal-overlay').forEach(m => m.remove());
+        }
+        function removeUser(id) {
+            if (!confirm('Xóa người dùng này?')) return;
+            const idx = users.findIndex(u => u.id === id);
+            if (idx === -1) { showToast('Không tìm thấy người dùng', true); return; }
+            users.splice(idx, 1);
+            renderAdminUsers();
+            renderHeaderUser();
+            showToast('Đã xóa người dùng');
+        }
+
+        function showEditUserModal(id) {
+            const u = users.find(x => x.id === id);
+            if (!u) { showToast('Không tìm thấy người dùng', true); return; }
+            showModal(`
+        <h3>Chỉnh sửa người dùng (#${u.id})</h3>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+            <label>Username</label><input id="edit-u-username" value="${u.username}" disabled>
+            <label>Mật khẩu (để trống nếu không đổi)</label><input id="edit-u-password" type="password" placeholder="(Không đổi)">
+            <label>Họ tên</label><input id="edit-u-name" value="${u.name || ''}">
+            <label>Địa chỉ</label><input id="edit-u-address" value="${u.address || ''}">
+            <label>Số điện thoại</label><input id="edit-u-phone" type="tel" pattern="[0-9]{7,15}" value="${u.phone || ''}">
+            <label>Vai trò</label>
+            <select id="edit-u-role">
+                <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>admin</option>
+                <option value="staff" ${u.role === 'staff' ? 'selected' : ''}>staff</option>
+                <option value="customer" ${u.role === 'customer' ? 'selected' : ''}>customer</option>
+            </select>
+            <div style="display:flex;gap:8px;justify-content:flex-end;">
+                <button class="ghost" onclick="closeModal()">Hủy</button>
+                <button onclick="saveUserEdits(${u.id})">Lưu</button>
+            </div>
+        </div>
+    `);
+        }
+        function saveAdminNewProduct() {
+            const name = $('admin-new-p-name').value.trim();
+            if (!name) return alert('Nhập tên sản phẩm');
+            const brand = $('admin-new-p-brand').value.trim();
+            const category = $('admin-new-p-category').value.trim();
+            const price = Number($('admin-new-p-price').value) || 0;
+            const costPrice = Number($('admin-new-p-costPrice').value) || 0;
+            const stock = Number($('admin-new-p-stock').value) || 0;
+            const supplierId = Number($('admin-new-p-supplier').value) || null;
+            const image = $('admin-new-p-image').value.trim();
+            const size = $('admin-new-p-size').value.trim();
+            const description = $('admin-new-p-desc').value.trim();
+            const newId = (products.reduce((m, p) => Math.max(m, p.id), 0) || 0) + 1;
+            products.push({ id: newId, name, brand, category, price, costPrice, stock, image, description, size, supplierId });
+
+            renderAdminProducts();
+            renderSupplierList();
+            renderProducts();
+
+            // toast + đóng modal (đóng cả overlay và legacy modal)
+            showToast('Đã thêm sản phẩm');
+            setTimeout(() => {
+                // remove overlay modals
+                document.querySelectorAll('.modal-overlay').forEach(m => m.remove());
+                // hide legacy modal if present
+                try { closeModal(); } catch (e) { }
+            }, 260);
+        }
+        // ---------- PRODUCTS RENDER (catalog only) ----------
+        function renderProducts() {
+            const grid = $('product-grid');
+            grid.innerHTML = '';
+            const q = $('search-products') ? $('search-products').value.toLowerCase() : '';
+            const min = Number($('min-price').value) || 0;
+            const max = Number($('max-price').value) || Infinity;
+            const category = $('filter-category').value;
+            const brand = $('filter-brand').value;
+
+            const list = products.filter(p => {
+                const matchesQuery = p.name.toLowerCase().includes(q) || (p.category && p.category.toLowerCase().includes(q)) || (p.brand && p.brand.toLowerCase().includes(q));
+                const matchPrice = p.price >= min && p.price <= max;
+                const matchCategory = !category || p.category === category;
+                const matchBrand = !brand || p.brand === brand;
+                return matchesQuery && matchPrice && matchCategory && matchBrand;
+            });
+
+            list.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                card.dataset.productId = p.id; // allow locating card if needed
+                card.innerHTML = `
+      <img src="${p.image || 'https://via.placeholder.com/150'}" alt="${p.name}">
+      <h4>${p.name}</h4>
+      <div class="price">${formatCurrency(p.price)} VNĐ</div>
+      <div class="brand">${p.brand || ''}</div>
+      <div class="muted">${p.category || ''}</div>
+      <div style="margin-top:6px;font-size:13px;color:#2d6a4f;">Tồn kho: ${p.stock}</div>
+        <div style="margin-top:8px;display:flex;gap:6px;justify-content:center;">
+        <button style="flex: 1;" onclick="showProductInfo(${p.id})">Thông tin</button>
+        <button style="flex: 1;" onclick="showPurchaseOptions(${p.id}, 'cart')">Thêm vào giỏ</button>
+        <button style="flex: 1; background:#0ea5a4;color:white" onclick="buyQuick(${p.id}, this)">Mua</button>
+      </div>
+    `;
+                grid.appendChild(card);
+            });
+            $('products-count').textContent = list.length;
+            $('stat-products').textContent = products.length;
+            updateSummary();
+        }
+        function buyQuick(productId, btnEl) {
+            const p = products.find(x => x.id === productId);
+            if (!p) { showToast('Sản phẩm không tồn tại', true); return; }
+
+            // require login
+            if (!currentUser) {
+                if (!confirm('Bạn cần đăng nhập/đăng ký để mua. Mở cửa sổ đăng nhập?')) return;
+                showAuthModal();
+                return;
+            }
+            if (currentUser.role !== 'customer') {
+                showToast('Chỉ khách hàng mới mua được', true);
+                return;
+            }
+
+            const sizes = p.size ? p.size.split(',').map(s => s.trim()) : ['One Size'];
+            const multiChoice = sizes.length > 1 && !['one size', 'free size', 'onesize', 'free-size'].includes(sizes[0].toLowerCase());
+            if (multiChoice) {
+                // need to choose size -> open modal (keep existing flow)
+                showPurchaseOptions(productId, 'buy');
+                return;
+            }
+
+            const size = sizes[0] || 'One Size';
+            const ok = buyNow(currentUser.id, productId, 1, size);
+            if (!ok) {
+                showToast('Mua thất bại (kiểm tra tồn kho)', true);
+                return;
+            }
+
+            // behave like "Thêm vào giỏ" flow:
+            // 1) show toast
+            // 2) run flying animation (use btnEl if available)
+            // 3) ensure UI refreshed
+            showToast('Mua thành công');
+
+            // find element for animation start (prefer button element passed)
+            let fromEl = btnEl || document.querySelector(`.product-card[data-product-id="${productId}"] img`);
+            if (!fromEl && p.image) {
+                fromEl = Array.from(document.querySelectorAll('img')).find(img => img.src && img.src.indexOf(p.image) !== -1);
+            }
+            animateFlyImage(p.image || 'https://via.placeholder.com/80', fromEl);
+
+            // short delay to let toast be noticed, then refresh UI
+            setTimeout(() => {
+                renderProducts();
+                renderCartForUser(currentUser.id);
+                renderOrders();
+                updateSummary();
+            }, 300);
+        }
+        function animateFlyImage(src, fromEl) {
+            try {
+                const img = document.createElement('img');
+                img.src = src;
+                img.className = 'flying-img';
+                document.body.appendChild(img);
+
+                const start = fromEl ? fromEl.getBoundingClientRect() : { left: window.innerWidth / 2, top: window.innerHeight / 2, width: 0, height: 0 };
+                const headerUser = document.getElementById('header-user') || document.querySelector('header');
+                const targetRect = headerUser ? headerUser.getBoundingClientRect() : { left: window.innerWidth - 60, top: 20, width: 40, height: 40 };
+
+                // set start position (center of fromEl)
+                const startX = start.left + (start.width || 24) / 2 - 40; // adjust to center the 80px img
+                const startY = start.top + (start.height || 24) / 2 - 40;
+                img.style.left = `${startX}px`;
+                img.style.top = `${startY}px`;
+                img.style.opacity = '1';
+                img.style.transform = 'translate(0,0) scale(1)';
+
+                // force layout
+                img.getBoundingClientRect();
+
+                // compute target (center of header-user)
+                const targetX = targetRect.left + targetRect.width / 2 - 40;
+                const targetY = targetRect.top + targetRect.height / 2 - 40;
+
+                const dx = targetX - startX;
+                const dy = targetY - startY;
+
+                // animate using transform
+                requestAnimationFrame(() => {
+                    img.style.transform = `translate(${dx}px, ${dy}px) scale(0.25) rotate(10deg)`;
+                    img.style.opacity = '0.0';
+                });
+
+                // cleanup after transition
+                setTimeout(() => {
+                    img.remove();
+                }, 900);
+            } catch (e) {
+                // silent
+            }
+        }
+
+        function applyFilters() { renderProducts(); }
+        function resetFilters() { $('min-price').value = ''; $('max-price').value = ''; $('filter-category').value = ''; $('filter-brand').value = ''; renderProducts(); }
+
+        // ---------- PRODUCT INFO / CART / BUY ----------
+        function showModal(html) { $('modal-panel').innerHTML = html; $('modal').style.display = 'flex'; }
+        function closeModal() { $('modal').style.display = 'none'; }
+        document.getElementById('modal')?.addEventListener('click', function (e) { if (e.target.id === 'modal') closeModal(); });
+        function showProductInfo(id) {
+            const p = products.find(x => x.id === id); if (!p) return;
+            const supplier = suppliers.find(s => s.id === p.supplierId);
+            -            showModal(`
+            <h3>${p.name}</h3>
+            <img src="${p.image || 'https://via.placeholder.com/300'}" style="width:100%;height:200px;object-fit:cover;border-radius:6px">
+            <p><strong>Mã sản phẩm:</strong> ${p.id}</p>
+            <p><strong>Thương hiệu:</strong> ${p.brand || '-'}</p>
+            <p><strong>Loại:</strong> ${p.category || '-'}</p>
+            <p><strong>Giá:</strong> ${formatCurrency(p.price)} VNĐ</p>
+            <p><strong>Tồn kho:</strong> ${p.stock}</p>
+            <p><strong>Mô tả:</strong> ${p.description || 'Chưa có mô tả'}</p>
+            <p><strong>Kích cỡ:</strong> ${p.size || 'Tùy chọn'}</p>
+            <p><strong>Nhà cung cấp:</strong> ${supplier ? supplier.company : 'Không rõ'}</p>
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
+              <button onclick="closeModal()">Đóng</button>
+            </div>
+        `);
+            +            showModal(`
+            <h3 style="margin-top:0">${p.name}</h3>
+            <div style="text-align:center;">
+              <img src="${p.image || 'https://via.placeholder.com/300'}" alt="${p.name}">
+            </div>
+            <p><strong>Mã sản phẩm:</strong> ${p.id}</p>
+            <p><strong>Thương hiệu:</strong> ${p.brand || '-'}</p>
+            <p><strong>Loại:</strong> ${p.category || '-'}</p>
+            <p><strong>Giá:</strong> ${formatCurrency(p.price)} VNĐ</p>
+            <p><strong>Tồn kho:</strong> ${p.stock}</p>
+            <p><strong>Mô tả:</strong> ${p.description || 'Chưa có mô tả'}</p>
+            <p><strong>Kích cỡ:</strong> ${p.size || 'Tùy chọn'}</p>
+            <p><strong>Nhà cung cấp:</strong> ${supplier ? supplier.company : 'Không rõ'}</p>
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
+              <button onclick="closeModal()">Đóng</button>
+            </div>
+        `);
+        }
+
+        // show purchase options modal (requires login)
+        function showPurchaseOptions(productId, action) {
+            const p = products.find(x => x.id === productId);
+            if (!p) return alert("Không tìm thấy sản phẩm!");
+
+            // require login
+            if (!currentUser) {
+                if (!confirm('Bạn cần đăng nhập/đăng ký để thực hiện thao tác này. Mở cửa sổ đăng nhập?')) return;
+                showAuthModal();
+                return;
+            }
+            // only customers can add/buy
+            if (currentUser.role !== 'customer') {
+                return alert('Chỉ khách hàng mới có thể mua hàng. Vui lòng đăng nhập tài khoản khách.');
+            }
+
+            const sizes = p.size ? p.size.split(',').map(s => s.trim()) : ['One Size'];
+            let sizeOptionsHtml = '';
+            let sizeFieldStyle = 'flex: 1;';
+
+            if (sizes.length > 0 && sizes[0] !== 'One Size' && sizes[0].toLowerCase() !== 'free size') {
+                const selectOptions = sizes.map(s => `<option value="${s}">${s}</option>`).join('');
+                sizeOptionsHtml = `
+        <div class="field" style="${sizeFieldStyle}">
+          <label for="modal-size" style="display: block; margin-bottom: 4px; font-weight: 500;">Chọn Size:</label>
+          <select id="modal-size" style="width:100%; padding: 8px; border-radius: 8px; border: 1px solid #e6e9f2; box-sizing: border-box;">
+            ${selectOptions}
+          </select>
+        </div>`;
+            } else {
+                sizeOptionsHtml = `<input type="hidden" id="modal-size" value="${sizes[0]}">`;
+                sizeFieldStyle = 'display: none;';
+            }
+
+            const modal = document.createElement("div");
+            modal.className = "modal-overlay";
+            const actionText = (action === 'cart') ? 'Thêm vào giỏ' : 'Mua ngay';
+
+            modal.innerHTML = `
+        <div class="modal-content" style="max-width: 420px; padding: 20px;">
+          <h3 style="margin-top:0;">${p.name}</h3>
+          <p style="font-weight: 600;">Giá: <span style="color: #059669;">${formatCurrency(p.price)} VNĐ</span></p>
+          <p style="font-size:14px; color: #777; margin-bottom: 10px;">Tồn kho: ${p.stock}</p>
+          <form onsubmit="event.preventDefault(); handlePurchaseConfirm(${p.id}, '${action}');">
+            <div style="display:flex; gap: 12px; align-items: flex-start; margin-bottom: 20px;">
+              ${sizeOptionsHtml}
+              <div class="field" style="flex: 1;">
+                <label for="modal-qty" style="display: block; margin-bottom: 4px; font-weight: 500;">Số lượng:</label>
+                <input id="modal-qty" type="number" value="1" min="1" max="${p.stock}" required 
+                    style="width:90px; padding: 8px; border-radius: 8px; border: 1px solid #e6e9f2; text-align:center; box-sizing: border-box;">
+              </div>
+            </div>
+            <div style="margin-top:20px; display:flex; justify-content:flex-end; gap: 10px;">
+              <button type="button" class="ghost" onclick="this.closest('.modal-overlay').remove()" 
+                    style="padding: 10px 18px; border-radius: 8px; font-size: 14px;">Hủy</button>
+              <button type="submit" style="background: var(--accent); color: white; padding: 10px 18px; border-radius: 8px; font-size: 14px;">${actionText}</button>
+            </div>
+          </form>
+        </div>
+        `;
+            document.body.appendChild(modal);
+        }
+
+        function handlePurchaseConfirm(productId, action) {
+            const qtyEl = document.getElementById('modal-qty');
+            const sizeEl = document.getElementById('modal-size');
+            const qty = qtyEl ? Math.max(1, Number(qtyEl.value) || 1) : 1;
+            const size = sizeEl ? sizeEl.value : 'One Size';
+
+            if (!currentUser) { showToast('Vui lòng đăng nhập', true); return; }
+            const p = products.find(x => x.id === productId);
+            if (!p) { showToast('Sản phẩm không tồn tại', true); return; }
+            if (p.stock < qty) { showToast('Không đủ tồn kho', true); return; }
+
+            if (action === 'cart') {
+                const ok = addToCart(currentUser.id, productId, qty, size);
+                if (!ok) { showToast('Không thể thêm vào giỏ (kiểm tra tồn kho)', true); return; }
+                showToast('Đã thêm vào giỏ hàng');
+                setTimeout(() => {
+                    document.querySelectorAll('.modal-overlay').forEach(m => m.remove());
+                    const legacyModal = document.getElementById('modal'); if (legacyModal) legacyModal.style.display = 'none';
+                    renderProducts(); renderCartForUser(currentUser.id); updateSummary();
+                }, 300);
+                return;
+            }
+            else if (action !== 'cart') {
+                const ok = buyNow(currentUser.id, productId, qty, size);
+                if (!ok) {
+                    showToast('Mua thất bại (kiểm tra tồn kho)', true);
+                    return;
+                }
+                // show toast like add-to-cart flow
+                showToast('Mua thành công');
+
+                // start animation from product image (prefer product-card image, then modal image)
+                let fromEl = document.querySelector(`.product-card[data-product-id="${productId}"] img`);
+                if (!fromEl) fromEl = document.querySelector('.modal-content img') || null;
+                animateFlyImage(p.image || 'https://via.placeholder.com/80', fromEl);
+
+                // close modal overlays and refresh UI after short delay so toast/animation visible
+                setTimeout(() => {
+                    document.querySelectorAll('.modal-overlay').forEach(m => m.remove());
+                    const legacyModal = document.getElementById('modal'); if (legacyModal) legacyModal.style.display = 'none';
+                    renderProducts(); renderCartForUser(currentUser.id); renderOrders(); updateSummary();
+                }, 350);
+
+                return;
+            }
+
+
+            // immediate buy (không qua giỏ)
+            const okBuy = buyNow(currentUser.id, productId, qty, size);
+            if (!okBuy) {
+                showToast('Mua thất bại (kiểm tra tồn kho)', true);
+                return;
+            }
+
+            // thông báo và hiệu ứng như "Đã thêm vào giỏ"
+            showToast('Mua thành công');
+
+            // tìm phần tử bắt đầu animation: ưu tiên ảnh trong product-card, fallback ảnh trong modal, cuối cùng null
+            let fromEl = document.querySelector(`.product-card[data-product-id="${productId}"] img`);
+            if (!fromEl) fromEl = document.querySelector('.modal-content img') || null;
+            animateFlyImage(p.image || 'https://via.placeholder.com/80', fromEl);
+
+            // đóng modal và cập nhật UI sau một khoảng nhỏ để user thấy toast
+            setTimeout(() => {
+                document.querySelectorAll('.modal-overlay').forEach(m => m.remove());
+                const legacyModal = document.getElementById('modal'); if (legacyModal) legacyModal.style.display = 'none';
+                renderProducts(); renderCartForUser(currentUser.id); renderOrders(); updateSummary();
+            }, 350);
+        }
+        function showToast(message, isError = false, duration = 2000) {
+            let container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                container.className = 'toast-container';
+                document.body.appendChild(container);
+            }
+            const t = document.createElement('div');
+            t.className = 'toast' + (isError ? ' error' : '');
+            t.textContent = message;
+            container.appendChild(t);
+            requestAnimationFrame(() => t.classList.add('show'));
+            setTimeout(() => t.classList.remove('show'), duration);
+            setTimeout(() => t.remove(), duration + 300);
+        }
+        function addToCart(userId, productId, qty = 1, size = 'One Size') {
+            const p = products.find(x => x.id === productId);
+            if (!p) { return false; }
+            if (!carts[userId]) carts[userId] = [];
+            const existing = carts[userId].find(it => it.productId === productId && it.size === size);
+            const inCartQty = existing ? existing.qty : 0;
+            const totalDesired = inCartQty + qty;
+            if (totalDesired > p.stock) {
+                // cannot add
+                return false;
+            }
+            if (existing) existing.qty = totalDesired;
+            else carts[userId].push({ productId, qty, size });
+            return true;
+        }
+        function buyNow(userId, productId, qty, size = 'One Size') {
+            const p = products.find(x => x.id === productId);
+            if (!p) return false;
+            if (p.stock < qty) return false;
+            p.stock -= qty;
+            orderId++;
+            const total = p.price * qty;
+            const date = new Date().toISOString().slice(0, 10);
+            orders.push({ id: orderId, customerId: userId, productId, qty, total, date, size });
+            updateSummary(); renderProducts(); renderOrders();
+            return true;
+        }
+
+        // ---------- CART TAB ----------
+        function renderCartForUser(userId) {
+            const cont = $('cart-list');
+            if (!cont) return;
+            cont.innerHTML = '';
+            if (!userId) { cont.innerHTML = '<div>Vui lòng đăng nhập để xem giỏ hàng.</div>'; return; }
+            const list = carts[userId] || [];
+            if (list.length === 0) { cont.innerHTML = '<div>Giỏ rỗng</div>'; return; }
+
+            const tbl = document.createElement('table');
+            tbl.style.width = '100%';
+            tbl.innerHTML = `<thead>
+        <tr>
+            <th>Mã SP</th>
+            <th>Sản phẩm</th>
+            <th>Size</th>
+            <th>Số lượng</th>
+            <th>Đơn giá</th>
+            <th>Thành tiền</th>
+            <th>Chọn</th>
+            <th>Thao tác</th>
+        </tr>
+    </thead><tbody></tbody>`;
+            const tbody = tbl.querySelector('tbody');
+
+            list.forEach((it, idx) => {
+                const p = products.find(x => x.id === it.productId) || { name: '[không xác định]', price: 0, stock: 0, size: '' };
+                // build size selector from product sizes (if available)
+                const sizes = (p.size && String(p.size).trim()) ? p.size.split(',').map(s => s.trim()) : ['One Size'];
+                let sizeControl;
+                if (sizes.length === 1) {
+                    // single option: show disabled select or text
+                    sizeControl = `<select disabled style="width:120px;padding:6px;border-radius:6px;border:1px solid #e6e9f2;">
+                                    <option value="${sizes[0]}">${sizes[0]}</option>
+                                   </select>
+                                   <input type="hidden" class="cart-size-hidden" data-idx="${idx}" value="${it.size || sizes[0]}">`;
+                } else {
+                    const opts = sizes.map(s => `<option value="${s}" ${s === (it.size || '') ? 'selected' : ''}>${s}</option>`).join('');
+                    sizeControl = `<select onchange="changeCartSize(${userId}, ${it.productId}, '${(it.size || '').replace(/'/g, "\\'")}', this.value)" style="width:120px;padding:6px;border-radius:6px;border:1px solid #e6e9f2;">
+                                    ${opts}
+                                   </select>`;
+                }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+            <td>${it.productId}</td>
+            <td>${p.name}</td>
+            <td>${sizeControl}</td>
+            <td>
+                <input value="${it.qty}" style="width:60px" 
+                    onchange="changeCartQty(${userId}, ${it.productId}, '${(it.size || '').replace(/'/g, "\\'")}', this.value)">
+            </td>
+            <td>${formatCurrency(p.price)}</td>
+            <td>${formatCurrency(p.price * it.qty)}</td>
+            <td><input type="checkbox" data-idx="${idx}" checked></td>
+            <td>
+                <button onclick="removeCartItem(${userId}, ${it.productId}, '${(it.size || '').replace(/'/g, "\\'")}')" 
+                    style="background:#ef4444;color:white">Xóa</button>
+            </td>
+        `;
+                tbody.appendChild(tr);
+            });
+
+            cont.appendChild(tbl);
+            const actions = document.createElement('div');
+            actions.style.marginTop = '8px';
+            actions.style.display = 'flex';
+            actions.style.gap = '8px';
+            actions.innerHTML = `<button onclick="checkoutSelected()">Thanh toán mục đã chọn</button>
+                <button class="ghost" onclick="clearCurrentCart()">Xóa giỏ</button>`;
+            cont.appendChild(actions);
+        }
+        function changeCartSize(userId, productId, oldSize, newSize) {
+            const list = carts[userId]; if (!list) return;
+            const idxOld = list.findIndex(x => x.productId === productId && String(x.size) === String(oldSize));
+            if (idxOld === -1) return renderCartForUser(userId);
+            if (oldSize === newSize) return; // no-op
+
+            const p = products.find(x => x.id === productId);
+            if (!p) return alert('Sản phẩm không tồn tại');
+
+            const oldItem = list[idxOld];
+            const existing = list.find(x => x.productId === productId && String(x.size) === String(newSize));
+
+            const desiredQty = oldItem.qty + (existing ? existing.qty : 0);
+            if (desiredQty > p.stock) {
+                alert('Không đủ tồn kho cho kích cỡ này. Tồn: ' + p.stock);
+                return renderCartForUser(userId);
+            }
+
+            if (existing) {
+                // merge quantities into existing size entry and remove old
+                existing.qty += oldItem.qty;
+                list.splice(idxOld, 1);
+            } else {
+                // just change size
+                oldItem.size = newSize;
+            }
+            renderCartForUser(userId);
+        }
+        function changeCartQty(userId, productId, size, value) {
+            const list = carts[userId]; if (!list) return;
+            const it = list.find(x => x.productId === productId && String(x.size) === String(size)); if (!it) return;
+            const newQty = Math.max(1, parseInt(value, 10) || 1);
+            // verify stock
+            const p = products.find(x => x.id === productId);
+            if (p && newQty > p.stock) { alert('Không đủ tồn kho'); it.qty = p.stock; }
+            else it.qty = newQty;
+            renderCartForUser(userId);
+        }
+
+        function removeCartItem(userId, productId, size) {
+            const list = carts[userId] || []; const idx = list.findIndex(x => x.productId === productId && String(x.size) === String(size)); if (idx >= 0) list.splice(idx, 1);
+            renderCartForUser(userId);
+        }
+
+        function checkoutSelected() {
+            if (!currentUser) return alert('Vui lòng đăng nhập để thanh toán');
+            const cont = $('cart-list');
+            const checkboxes = cont.querySelectorAll('input[type="checkbox"]');
+            const list = carts[currentUser.id] || [];
+            const toCheckout = [];
+            checkboxes.forEach(cb => { if (cb.checked) { const idx = Number(cb.dataset.idx); if (list[idx]) toCheckout.push(list[idx]); } });
+            if (!toCheckout.length) return alert('Chọn ít nhất 1 sản phẩm để thanh toán');
+            if (!confirm('Xác nhận thanh toán các mục đã chọn?')) return;
+            toCheckout.forEach(it => {
+                const p = products.find(x => x.id === it.productId);
+                if (p && p.stock >= it.qty) { p.stock -= it.qty; orderId++; const total = p.price * it.qty; const date = new Date().toISOString().slice(0, 10); orders.push({ id: orderId, customerId: currentUser.id, productId: it.productId, qty: it.qty, total, date, size: it.size }); }
+                // if stock insufficient, skip (simple demo)
+            });
+            // remove checked items from cart
+            carts[currentUser.id] = (carts[currentUser.id] || []).filter((it, i) => { const cb = cont.querySelector(`input[type="checkbox"][data-idx="${i}"]`); return cb && !cb.checked; });
+            renderCartForUser(currentUser.id);
+            renderProducts();
+            renderOrders();
+            updateSummary();
+            alert('Thanh toán hoàn tất');
+        }
+
+        function clearCurrentCart() { if (!currentUser) return alert('Vui lòng đăng nhập'); if (!confirm('Xóa toàn bộ giỏ?')) return; carts[currentUser.id] = []; renderCartForUser(currentUser.id); }
+
+        // ---------- ORDERS RENDER ----------
+        function renderOrders() {
+            const container = $('orders');
+            if (!container) return;
+
+            // filter list depending on role
+            const list = (currentUser && currentUser.role === 'customer')
+                ? orders.filter(o => o.customerId === currentUser.id)
+                : orders.slice();
+
+            // if table exists use it (preferred), otherwise fallback to old div rendering
+            const table = document.getElementById('orders-table');
+            if (table && table.querySelector('tbody')) {
+                const tbody = table.querySelector('tbody');
+                if (!list.length) {
+                    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:12px">Chưa có đơn hàng</td></tr>`;
+                    return;
+                }
+                const rowsHtml = list.map(o => {
+                    const p = products.find(x => x.id === o.productId) || {};
+                    const userLabel = (users || []).find(u => u.id === o.customerId);
+                    const ownerInfo = userLabel ? `${userLabel.name || userLabel.username} (id:${o.customerId})` : `id:${o.customerId}`;
+                    const canDelete = currentUser && (currentUser.role === 'admin' || currentUser.id === o.customerId);
+                    const deleteBtn = canDelete ? `<button onclick="removeOrder(${o.id})" style="background:#ef4444;color:#fff;padding:6px 8px;border-radius:6px;border:none;cursor:pointer">Xóa</button>` : '';
+                    return `<tr>
+                <td>${o.id}</td>
+                <td>${ownerInfo}</td>
+                <td>${p.name || '[sản phẩm đã xoá]'}</td>
+                <td>${o.size || '-'}</td>
+                <td>${o.qty}</td>
+                <td>${formatCurrency(p.price || 0)}</td>
+                <td>${formatCurrency(o.total || 0)}</td>
+                <td>${o.date || ''}</td>
+                <td style="white-space:nowrap;">${deleteBtn}</td>
+            </tr>`;
+                }).join('');
+                tbody.innerHTML = rowsHtml;
+                return;
+            }
+
+            // fallback: previous card style rendering inside #orders
+            if (!list.length) {
+                container.innerHTML = '<div>Chưa có đơn hàng</div>';
+                return;
+            }
+            const rows = list.map(o => {
+                const p = products.find(x => x.id === o.productId) || {};
+                const userLabel = (users || []).find(u => u.id === o.customerId);
+                const ownerInfo = userLabel ? ` (${userLabel.username})` : '';
+                const canDelete = currentUser && (currentUser.role === 'admin' || currentUser.id === o.customerId);
+                const deleteBtn = canDelete ? `<button style="background:#ef4444;color:#fff;margin-left:8px" onclick="removeOrder(${o.id})">Xóa</button>` : '';
+                return `<div style="padding:10px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center">
+            <div>
+                <div style="font-weight:700">${p.name || '[sản phẩm đã xoá]'} <span style="color:#666;font-weight:600">#${o.id}</span></div>
+                <div style="font-size:13px;color:#666">Số lượng: ${o.qty} — Kích cỡ: ${o.size || '-'} — Tổng: ${formatCurrency(o.total)} VNĐ</div>
+                <div style="font-size:12px;color:#666">Khách hàng:${ownerInfo} — Ngày: ${o.date || ''}</div>
+            </div>
+            <div style="white-space:nowrap">
+                ${deleteBtn}
+            </div>
+        </div>`;
+            }).join('');
+            container.innerHTML = rows;
+        }
+        function removeOrder(orderId) {
+            if (!confirm("Bạn có chắc muốn xóa đơn hàng này không?")) return;
+
+            // Xóa phần tử khỏi mảng orders
+            const index = orders.findIndex(o => o.id === orderId);
+            if (index === -1) {
+                alert("Không tìm thấy đơn hàng để xóa!");
+                return;
+            }
+
+            orders.splice(index, 1); // xóa khỏi danh sách
+
+            // Cập nhật lại dữ liệu trong localStorage (nếu bạn đang lưu)
+            if (typeof localStorage !== "undefined") {
+                localStorage.setItem("orders", JSON.stringify(orders));
+            }
+
+            // Gọi lại renderOrders() để cập nhật giao diện
+            renderOrders();
+
+            alert("Đơn hàng đã được xóa!");
+        }
+
+
+        function deleteOrder(id) { if (!confirm('Xóa đơn?')) return; const idx = orders.findIndex(x => x.id === id); if (idx >= 0) orders.splice(idx, 1); renderOrders(); updateSummary(); }
+
+        // ---------- PROFILE TAB ----------
+        function renderProfile() {
+            const area = $('profile');
+            if (!area) return;
+            area.innerHTML = '';
+            if (!currentUser) {
+                area.innerHTML = `<div>Vui lòng đăng nhập để xem / chỉnh sửa thông tin cá nhân.</div>`;
+                return;
+            }
+            area.innerHTML = `
+                <h3>Thông tin cá nhân</h3>
+                <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                    <div style="flex:1;min-width:220px;">
+                        <label>Họ tên</label><input id="p-name" value="${currentUser.name || ''}">
+                        <label>Địa chỉ</label><input id="p-address" value="${currentUser.address || ''}">
+                        <label>Số điện thoại</label><input id="p-phone" type="tel" pattern="[0-9]{7,15}" value="${currentUser.phone || ''}" placeholder="Chỉ nhập chữ số">
+                    </div>
+                    <div style="flex:1;min-width:220px;">
+                        <label>Tài khoản</label><input value="${currentUser.username}" disabled>
+                        <label>Vai trò</label><input value="${currentUser.role}" disabled>
+                    </div>
+                </div>
+                <div style="margin-top:12px;">
+                    <button onclick="saveProfile()">Lưu</button>
+                </div>
+            `;
+        }
+
+        function saveProfile() {
+            if (!currentUser) return alert('Không có người dùng');
+            currentUser.name = $('p-name').value.trim();
+            currentUser.address = $('p-address').value.trim();
+            currentUser.phone = $('p-phone').value.trim();
+            alert('Đã lưu thông tin cá nhân');
+            renderHeaderUser();
+        }
+
+        // ---------- ADMIN: DASHBOARD / CUSTOMERS / SUPPLIERS / REVENUE ----------
+        function renderAdminDashboard() {
+            const el = $('admin-dashboard');
+            if (!el) return;
+            const totalProducts = products.length;
+            const totalCustomers = users.filter(u => u.role === 'customer').length;
+            const totalOrders = orders.length;
+            const revenue = orders.reduce((s, o) => s + Number(o.total), 0);
+
+            el.innerHTML = `
+        <h3>Dashboard (Admin)</h3>
+         <div class="stats">
+            <div class="stat"><div class="muted">Tổng sản phẩm</div><div style="font-size:20px">${totalProducts}</div></div>
+            <div class="stat"><div class="muted">Tổng khách hàng</div><div style="font-size:20px">${totalCustomers}</div></div>
+            <div class="stat"><div class="muted">Tổng đơn hàng</div><div style="font-size:20px">${totalOrders}</div></div>
+            <div class="stat"><div class="muted">Doanh thu</div><div style="font-size:20px;color:#059669">${formatCurrency(revenue)} VNĐ</div></div>
+        </div>
+
+        <h4>Sản phẩm (Toàn bộ)</h4>
+        <div class="product-list-area" style="margin-top:12px;">
+            <div class="product-grid">
+                ${products.map(p => {
+                const supplier = suppliers.find(s => s.id === p.supplierId);
+                return `
+                        <div class="product-card" style="text-align:left;">
+                            <img src="${p.image || 'https://via.placeholder.com/300'}" alt="${p.name}" style="height:160px;object-fit:cover;border-radius:8px;margin-bottom:8px;">
+                            <h4 style="margin:6px 0 4px;">${p.name}</h4>
+                            <div class="price">${formatCurrency(p.price)} VNĐ</div>
+                            <div class="brand" style="font-size:13px;color:#666;margin-top:4px;">${p.brand || ''} — ${p.category || ''}</div>
+                            <div style="margin-top:6px;font-size:13px;color:#2d6a4f;">Tồn kho: ${p.stock}</div>
+                            <div style="margin-top:8px;font-size:13px;color:#333;line-height:1.2;max-height:56px;overflow:hidden;">${p.description || ''}</div>
+                            <div style="margin-top:8px;font-size:12px;color:#555;">Nhà cung cấp: ${supplier ? supplier.company : 'Không rõ'}</div>
+                        </div>
+                    `;
+            }).join('')}
+            </div>
+        </div>
+
+       
+    `;
+        }
+        function showCustomerInfo(id) {
+            const u = users.find(x => x.id === id);
+            if (!u) return alert('Không tìm thấy khách hàng');
+            const custOrders = orders.filter(o => o.customerId === id).map(o => {
+                const p = products.find(x => x.id === o.productId) || {};
+                return `<li>${p.name || '?'} — Số lượng: ${o.qty} — Ngày: ${o.date} — ${formatCurrency(o.total)} VNĐ</li>`;
+            }).join('') || '<li>Chưa có đơn hàng</li>';
+            showModal(`
+        <h3>Thông tin khách hàng</h3>
+        <p><strong>ID:</strong> ${u.id}</p>
+        <p><strong>Họ tên:</strong> ${u.name}</p>
+        <p><strong>Địa chỉ:</strong> ${u.address || '-'}</p>
+        <p><strong>Điện thoại:</strong> ${u.phone || '-'}</p>
+        <p><strong>Username:</strong> ${u.username}</p>
+        <h4>Đơn hàng</h4>
+        <ul style="margin-left:16px;">${custOrders}</ul>
+        <div style="text-align:right"><button onclick="closeModal()">Đóng</button></div>
+    `);
+        }
+        function renderAdminCustomers() {
+            const el = $('admin-customers');
+            if (!el) return;
+            // show customers and purchases
+            const custs = users.filter(u => u.role === 'customer');
+            el.innerHTML = `<h3>Khách hàng & lịch sử mua</h3>`;
+            if (!custs.length) { el.innerHTML += '<div>Không có khách hàng</div>'; return; }
+            const rows = custs.map(c => {
+                const custOrders = orders.filter(o => o.customerId === c.id);
+                const purchased = custOrders.map(o => {
+                    const p = products.find(x => x.id === o.productId) || {};
+                    return `${p.name || '[?]'} x${o.qty} (${o.date})`;
+                }).join('<br>') || '-';
+                return `<tr>
+                    <td>${c.id}</td>
+                    <td>${c.name}</td>
+                    <td>${c.address || '-'}</td>
+                    <td>${c.phone || '-'}</td>
+                    <td>${purchased}</td>
+                    <td><button onclick="showCustomerInfo(${c.id})">Xem</button></td>
+                </tr>`;
+            });
+            el.innerHTML += `<table>
+        <thead><tr><th>ID</th><th>Tên</th><th>Địa chỉ</th><th>Điện thoại</th><th>Sản phẩm đã mua</th><th>Thông tin</th></tr></thead>
+        <tbody>${rows.join('')}</tbody>
+    </table>`;
+        }
+
+        function renderAdminSuppliers() {
+            const el = $('admin-suppliers');
+            if (!el) return;
+            el.innerHTML = `<h3>Nhà cung cấp</h3>
+        <div style="display:flex;gap:12px;align-items:flex-end;margin-bottom:12px;flex-wrap:wrap;">
+            <div style="flex:1;min-width:200px">
+                <label>Tên công ty</label>
+                <input id="sup-company" placeholder="Ví dụ: Công ty A">
+            </div>
+            <div style="width:220px">
+                <label>Giá nhập mặc định</label>
+                <input id="sup-cost" type="number" placeholder="VD: 100000">
+            </div>
+            <div style="width:240px">
+                <label>Số điện thoại (chỉ số)</label>
+                <input id="sup-phone" type="tel" pattern="[0-9]{7,15}" placeholder="090xxxxxxxx">
+            </div>
+            <div style="flex:1;min-width:260px">
+                <label>Email liên hệ</label>
+                <input id="sup-email" type="email" placeholder="contact@example.com">
+            </div>
+            <div style="flex:1;min-width:260px">
+                <label>Mô tả ngắn</label>
+                <input id="sup-desc" placeholder="Thông tin chi tiết về nhà cung cấp">
+            </div>
+            <div>
+                <button onclick="addSupplier()">Thêm nhà cung cấp</button>
+            </div>
+        </div>
+        <div id="supplier-list"></div>
+    `;
+            renderSupplierList();
+        }
+        function renderSupplierList() {
+            const el = $('supplier-list');
+            if (!el) return;
+            if (!suppliers.length) { el.innerHTML = '<div>Không có nhà cung cấp</div>'; return; }
+            const rows = suppliers.map(s => {
+                const prods = products.filter(p => p.supplierId === s.id);
+                // show only nhập price (cost) per product, no bán price here
+                const prodNames = prods.length
+                    ? prods.map(p => `${p.name} — Giá nhập: ${formatCurrency(p.costPrice || s.defaultCost || 0)} VNĐ`).join('<br>')
+                    : '<span style="color:#666">Chưa có sản phẩm</span>';
+                return `<tr>
+                    <td style="vertical-align:top">${s.id}</td>
+                    <td style="vertical-align:top">${s.company}<div style="font-size:12px;color:#666;margin-top:6px">${s.description || ''}</div></td>
+                    <td style="vertical-align:top">${s.contact || '-'}</td>
+                    <td style="vertical-align:top;max-width:360px">${prodNames}</td>
+                    <td style="white-space:nowrap;vertical-align:top">
+                        <button onclick="showEditSupplierModal(${s.id})">Sửa nhà cung cấp</button>
+                        <button onclick="removeSupplier(${s.id})" style="background:#ef4444;color:white;display:block;margin-top:6px">Xóa</button>
+                    </td>
+                </tr>`;
+            });
+            el.innerHTML = `<table>
+        <thead><tr><th>ID</th><th>Công ty / Mô tả</th><th>Liên hệ</th><th>Sản phẩm (Giá nhập)</th><th>Thao tác</th></tr></thead>
+        <tbody>${rows.join('')}</tbody>
+    </table>`;
+        }
+        function showSupplierProductsModal(supplierId) {
+            const s = suppliers.find(x => x.id === supplierId);
+            if (!s) return alert('Không tìm thấy nhà cung cấp');
+            const prods = products.filter(p => p.supplierId === supplierId);
+            const htmlList = prods.length ? prods.map(p => `<li>${p.name} — ${formatCurrency(p.price)} VNĐ — Tồn: ${p.stock}</li>`).join('') : '<li>Chưa có sản phẩm</li>';
+            showModal(`
+                <h3>Sản phẩm của ${s.company}</h3>
+                <ul style="margin-left:16px;">${htmlList}</ul>
+                <div style="text-align:right"><button onclick="closeModal()">Đóng</button></div>
+            `);
+        }
+        function showAddProductModal(supplierId) {
+            const brandOptions = ['Louis Vuitton', 'Routine', 'MLB', 'Gucci', 'Nike', 'Zara', 'Tissot', 'Sony', 'Xiaomi', 'An Phước'].map(b => `<option value="${b}">${b}</option>`).join('');
+            const categoryOptions = ['Thời trang', 'Giày dép', 'Phụ kiện', 'Điện tử'].map(c => `<option value="${c}">${c}</option>`).join('');
+            showModal(`
+        <h3>Thêm sản phẩm cho nhà cung cấp #${supplierId}</h3>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+            <label>Tên</label><input id="new-p-name">
+            <label>Thương hiệu</label>
+            <select id="new-p-brand">${brandOptions}</select>
+            <label>Loại</label>
+            <select id="new-p-category">${categoryOptions}</select>
+            <label>Giá bán</label><input id="new-p-price" type="number" min="0" step="1">
+            <label>Giá nhập (cost)</label><input id="new-p-costPrice" type="number" min="0" step="1">
+            <label>Số lượng tồn</label><input id="new-p-stock" type="number" value="0" min="0" step="1">
+            <label>Ảnh (tên file hoặc url)</label><input id="new-p-image">
+            <label>Kích cỡ</label><input id="new-p-size">
+            <label>Mô tả</label><textarea id="new-p-desc" style="min-height:80px"></textarea>
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
+                <button class="ghost" onclick="closeModal()">Hủy</button>
+                <button onclick="saveNewProduct(${supplierId})">Thêm sản phẩm</button>
+            </div>
+        </div>
+    `);
+        }
+        function saveNewProduct(supplierId) {
+            const name = $('new-p-name').value.trim();
+            if (!name) return alert('Nhập tên sản phẩm');
+            const brand = $('new-p-brand').value.trim();
+            const category = $('new-p-category').value.trim();
+            const price = Number($('new-p-price').value) || 0;
+            const costPrice = Number($('new-p-costPrice').value) || 0;
+            const stock = Number($('new-p-stock').value) || 0;
+            const image = $('new-p-image').value.trim();
+            const size = $('new-p-size').value.trim();
+            const description = $('new-p-desc').value.trim();
+            const newId = (products.reduce((m, p) => Math.max(m, p.id), 0) || 0) + 1;
+            products.push({ id: newId, name, brand, category, price, costPrice, stock, image, description, size, supplierId });
+            renderSupplierList();
+            renderProducts();
+
+            // toast + đóng modal
+            showToast('Đã thêm sản phẩm');
+            setTimeout(() => {
+                document.querySelectorAll('.modal-overlay').forEach(m => m.remove());
+                try { closeModal(); } catch (e) { }
+            }, 260);
+        }
+        function showEditSupplierModal(id) {
+            const s = suppliers.find(x => x.id === id);
+            if (!s) return alert('Không tìm thấy nhà cung cấp');
+            showModal(`
+        <h3>Chỉnh sửa nhà cung cấp</h3>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+            <label>Tên công ty</label><input id="edit-sup-company" value="${s.company}">
+            <label>Giá nhập mặc định</label><input id="edit-sup-cost" type="number" value="${s.defaultCost || 0}">
+            <label>Số điện thoại (chỉ số)</label><input id="edit-sup-phone" type="tel" pattern="[0-9]{7,15}" value="${s.phone || ''}">
+            <label>Email liên hệ</label><input id="edit-sup-email" type="email" value="${s.contact && s.contact.includes('@') ? s.contact : ''}">
+            <label>Mô tả</label><textarea id="edit-sup-desc" style="min-height:80px">${s.description || ''}</textarea>
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
+                <button class="ghost" onclick="closeModal()">Hủy</button>
+                <button onclick="saveSupplierEdits(${s.id})">Lưu</button>
+            </div>
+        </div>
+    `);
+        }
+        function saveSupplierEdits(id) {
+            const s = suppliers.find(x => x.id === id);
+            if (!s) return alert('Không tìm thấy nhà cung cấp');
+            const phone = $('edit-sup-phone').value.trim();
+            const email = $('edit-sup-email').value.trim();
+            if (phone && !/^[0-9]{7,15}$/.test(phone)) return alert('Số điện thoại phải là chữ số (7-15 chữ số)');
+            s.company = $('edit-sup-company').value.trim();
+            s.defaultCost = Number($('edit-sup-cost').value) || 0;
+            s.contact = email || phone || '';
+            s.phone = phone || '';
+            s.description = $('edit-sup-desc').value.trim();
+            renderSupplierList();
+            closeModal();
+            alert('Đã lưu nhà cung cấp');
+        }
+        function addSupplier() {
+            const company = $('sup-company').value.trim();
+            const cost = Number($('sup-cost').value) || 0;
+            const phone = $('sup-phone').value.trim();
+            const email = $('sup-email').value.trim();
+            const desc = $('sup-desc').value.trim();
+            if (!company) return alert('Nhập tên công ty');
+            // validate phone numeric if provided
+            if (phone && !/^[0-9]{7,15}$/.test(phone)) return alert('Số điện thoại phải là chữ số (7-15 chữ số)');
+            supplierIdCounter++;
+            suppliers.push({ id: supplierIdCounter, company, contact: email || phone || '', phone: phone || '', defaultCost: cost, description: desc });
+            $('sup-company').value = ''; $('sup-cost').value = ''; $('sup-phone').value = ''; $('sup-email').value = ''; $('sup-desc').value = '';
+            renderSupplierList();
+            alert('Đã thêm nhà cung cấp');
+        }
+        function showEditProductModal(productId) {
+            const p = products.find(x => x.id === productId);
+            if (!p) return alert('Không tìm thấy sản phẩm');
+            showModal(`
+        <h3>Chỉnh sửa sản phẩm</h3>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+            <label>Mã: ${p.id}</label>
+            <label>Tên</label><input id="edit-p-name" value="${p.name || ''}">
+            <label>Thương hiệu</label><input id="edit-p-brand" value="${p.brand || ''}">
+            <label>Loại</label><input id="edit-p-category" value="${p.category || ''}">
+            <label>Giá bán</label><input id="edit-p-price" type="number" value="${p.price || 0}">
+            <label>Giá nhập (cost)</label><input id="edit-p-costPrice" type="number" value="${p.costPrice || ''}">
+            <label>Số lượng tồn</label><input id="edit-p-stock" type="number" value="${p.stock || 0}">
+            <label>Ảnh (tên file hoặc url)</label><input id="edit-p-image" value="${p.image || ''}">
+            <label>Kích cỡ</label><input id="edit-p-size" value="${p.size || ''}">
+            <label>Mô tả</label><textarea id="edit-p-desc" style="min-height:80px">${p.description || ''}</textarea>
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
+                <button class="ghost" onclick="closeModal()">Hủy</button>
+                <button onclick="saveProductEdits(${p.id})">Lưu</button>
+            </div>
+        </div>
+    `);
+        }
+        function saveProductEdits(id) {
+            const p = products.find(x => x.id === id);
+            if (!p) {
+                showToast('Không tìm thấy sản phẩm', true);
+                return;
+            }
+
+            // cập nhật dữ liệu từ form
+            p.name = $('edit-p-name').value.trim();
+            p.brand = $('edit-p-brand').value.trim();
+            p.category = $('edit-p-category').value.trim();
+            p.price = Number($('edit-p-price').value) || 0;
+            p.costPrice = Number($('edit-p-costPrice').value) || p.costPrice || 0;
+            p.stock = Number($('edit-p-stock').value) || 0;
+            p.image = $('edit-p-image').value.trim();
+            p.size = $('edit-p-size').value.trim();
+            p.description = $('edit-p-desc').value.trim();
+
+            // cập nhật giao diện
+            renderSupplierList();
+            renderProducts();
+            renderAdminDashboard();
+
+            // Hiển thị toast thông báo thành công giống "Đã thêm vào giỏ hàng"
+            showToast('Đã lưu sản phẩm');
+
+            // Đóng mọi modal (overlay + legacy) ngay sau khi lưu
+            try { closeModal(); } catch (e) { /* ignore */ }
+            document.querySelectorAll('.modal-overlay').forEach(m => m.remove());
+
+            // đảm bảo UI được cập nhật sau khi đóng
+            setTimeout(() => {
+                renderSupplierList();
+                renderProducts();
+                renderAdminDashboard();
+            }, 60);
+        }
+        function removeSupplier(id) {
+            if (!confirm('Xóa nhà cung cấp?')) return;
+            const idx = suppliers.findIndex(s => s.id === id); if (idx >= 0) suppliers.splice(idx, 1);
+            // remove mapping from products
+            products.forEach(p => { if (p.supplierId === id) delete p.supplierId; });
+            renderSupplierList();
+        }
+
+        function renderAdminRevenue() {
+            const el = $('admin-revenue');
+            if (!el) return;
+            const totalRevenue = orders.reduce((s, o) => s + Number(o.total), 0);
+            // compute cost of goods sold using product.costPrice (fallback to supplier.defaultCost)
+            let totalCOGS = 0;
+            orders.forEach(o => {
+                const p = products.find(x => x.id === o.productId);
+                let cost = 0;
+                if (p && p.costPrice) cost = p.costPrice;
+                else {
+                    const s = suppliers.find(su => su.id === (p ? p.supplierId : null));
+                    if (s) cost = s.defaultCost || 0;
+                }
+                totalCOGS += cost * o.qty;
+            });
+            const profit = totalRevenue - totalCOGS;
+            el.innerHTML = `
+                <h3>Thống kê doanh thu / lãi lỗ</h3>
+                <div class="stats">
+                    <div class="stat"><div class="muted">Tổng doanh thu</div><div style="font-size:20px;color:#059669">${formatCurrency(totalRevenue)} VNĐ</div></div>
+                    <div class="stat"><div class="muted">Tổng vốn (COGS)</div><div style="font-size:20px;color:#f97316">${formatCurrency(totalCOGS)} VNĐ</div></div>
+                    <div class="stat"><div class="muted">Lợi nhuận</div><div style="font-size:20px;color:${profit >= 0 ? '#059669' : '#ef4444'}">${formatCurrency(profit)} VNĐ</div></div>
+                </div>
+                <h4>Chi tiết đơn hàng</h4>
+                <div style="max-height:240px;overflow:auto">
+                    <table><thead><tr><th>ID</th><th>Khách</th><th>Sản phẩm</th><th>Số lượng</th><th>Doanh thu</th><th>Vốn</th><th>Lợi nhuận</th></tr></thead><tbody>
+                    ${orders.map(o => {
+                const p = products.find(x => x.id === o.productId) || {};
+                const user = users.find(u => u.id === o.customerId) || {};
+                let cost = (p && p.costPrice) ? p.costPrice : (suppliers.find(s => s.id === p.supplierId)?.defaultCost || 0);
+                const revenue = o.total;
+                const cogs = cost * o.qty;
+                const prof = revenue - cogs;
+                return `<tr><td>${o.id}</td><td>${user.name || user.username} (id:${o.customerId})</td><td>${p.name || '?'}</td><td>${o.qty}</td><td>${formatCurrency(revenue)}</td><td>${formatCurrency(cogs)}</td><td style="color:${prof >= 0 ? '#059669' : '#ef4444'}">${formatCurrency(prof)}</td></tr>`;
+            }).join('')}
+                    </tbody></table>
+                </div>
+            `;
+        }
+
+        // ---------- SUMMARY ----------
+        function updateSummary() {
+            const revenue = orders.reduce((s, o) => s + Number(o.total), 0);
+            $('stat-revenue').textContent = formatCurrency(revenue);
+            $('stat-customers').textContent = users.filter(u => u.role === 'customer').length;
+            $('stat-products').textContent = products.length;
+        }
+
+        // ---------- INIT ----------
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // render header user area
+            renderHeaderUser();
+            renderTabsForCurrentUser();
+            renderProducts();
+            renderOrders();
+            updateSummary();
+        });
     </script>
 </head>
 
 <body>
-
 
     <header style="background: linear-gradient(90deg, #6a5acd, #7b3fe4); padding: 10px 20px;">
         <div class="container" style="display:flex;align-items:center;justify-content:space-between;">
@@ -472,42 +1981,23 @@
                 <img src="logo.png" alt="Logo" style="height:80px;object-fit:contain;">
                 <h1 style="color:white;margin:0;font-size:22px;">HỆ THỐNG QUẢN LÝ BÁN HÀNG</h1>
             </div>
-            <div class="muted" style="color:#9fff66;font-size:16px;">
-                Người dùng: <strong>Admin(demo)</strong>
+            <div class="header-right" id="header-user">
+                <!-- login / user info rendered by JS -->
             </div>
         </div>
     </header>
 
-
     <main class="container">
-        <div class="stats">
-            <div class="stat">
-                <div class="muted">Tổng sản phẩm</div>
-                <div style="font-size:20px" id="stat-products">0</div>
-            </div>
-            <div class="stat">
-                <div class="muted">Tổng khách hàng</div>
-                <div style="font-size:20px" id="stat-customers">0</div>
-            </div>
-            <div class="stat">
-                <div class="muted">Tổng đơn hàng</div>
-                <div style="font-size:20px" id="stat-orders">0</div>
-            </div>
-            <div class="stat">
-                <div class="muted">Doanh thu (tổng)</div>
-                <div style="font-size:20px;color:#059669" id="stat-revenue">0</div>
-            </div>
-        </div>
+        <!-- Admin: Dashboard (admin-dashboard) -->
 
-        <div class="tabs">
-            <button class="tab-btn active" data-tab="shop">Sản phẩm</button>
-            <button class="tab-btn" data-tab="edit">Chỉnh sửa</button>
-            <button class="tab-btn" data-tab="cart">Giỏ hàng</button>
-            <button class="tab-btn" data-tab="orders">Đơn hàng</button>
+
+
+        <div class="tabs" id="tabs-container">
+            <!-- tabs rendered by JS -->
         </div>
 
         <!-- Tab 1: Sản phẩm -->
-        <div id="shop" class="tab-content active">
+        <div id="shop" class="tab-content" style="display:none;">
             <section class="card">
                 <h2>Tất cả sản phẩm</h2>
 
@@ -516,11 +2006,11 @@
                     <input id="search-products" type="text" placeholder="Tìm sản phẩm..." oninput="renderProducts()"
                         style="flex:1;padding:8px;border-radius:8px;border:1px solid #ccc;">
                     <div style="display:flex;gap:8px;align-items:center;">
-                        <label class="muted">Mã người dùng:</label>
-                        <input id="current-user-id" type="text" placeholder="VD: 1 (để thêm vào giỏ)"
-                            style="width:120px;padding:8px;border-radius:8px;border:1px solid #ccc;">
+                        <!-- <label class="muted">Mã người dùng:</label>
+                        <input id="current-user-id" type="text" placeholder="(Không cần khi đã đăng nhập)"
+                            style="width:180px;padding:8px;border-radius:8px;border:1px solid #ccc;"> -->
                     </div>
-                    <div class="muted">Hiển thị <span id="products-count">0</span> sản phẩm</div>
+                    <!-- <div class="muted">Hiển thị <span id="products-count">0</span> sản phẩm</div> -->
                 </div>
 
                 <div class="product-layout">
@@ -567,118 +2057,15 @@
             </section>
         </div>
 
-        <!-- Tab 2: Chỉnh sửa -->
-        <div id="edit" class="tab-content" style="display:none;">
-            <section class="card">
-                <h2>Chỉnh sửa sản phẩm (Admin)</h2>
-                <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
-                    <input type="password" id="admin-pass" placeholder="Nhập mật khẩu admin">
-                    <button id="admin-check-btn">Xác nhận</button>
-                </div>
-
-                <div id="admin-panel" style="display:none;">
-                    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-                        <input type="text" id="search-admin-products" placeholder="Tìm sản phẩm để chỉnh sửa..."
-                            style="width:60%;padding:8px;border-radius:8px;border:1px solid #ccc;margin-bottom:8px;">
-                        <div style="margin-left:auto; display:flex; gap:8px;">
-                            <button onclick="renderAdminProductList()">Tìm</button>
-                            <button class="ghost" onclick="renderAdminProductList()">Làm mới</button>
-                        </div>
-                    </div>
-
-                    <div style="display:flex;gap:20px;align-items:flex-start;">
-                        <!-- left: danh sách sản phẩm -->
-                        <div style="flex:1;min-width:320px;">
-                            <div id="edit-list"></div>
-                        </div>
-
-                        <!-- right: forms (Thêm mới + Chỉnh sửa) -->
-                        <div style="flex:1;max-width:700px;">
-                            <div id="admin-add-form">
-                                <h4>Thêm sản phẩm mới (Admin)</h4>
-                                <form id="admin-new-product-form" onsubmit="event.preventDefault(); saveNewProduct()">
-                                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                                        <div style="flex:1;min-width:160px;"><label>Tên</label><input id="new-p-name"
-                                                required>
-                                        </div>
-                                        <div style="flex:1;min-width:160px;"><label>Thương hiệu</label><input
-                                                id="new-p-brand">
-                                        </div>
-                                        <div style="flex:1;min-width:160px;"><label>Loại</label><input
-                                                id="new-p-category">
-                                        </div>
-                                        <div style="flex:1;min-width:120px;"><label>Giá</label><input id="new-p-price"
-                                                type="number" min="0"></div>
-                                        <div style="flex:1;min-width:120px;"><label>Số lượng</label><input
-                                                id="new-p-stock" type="number" min="0"></div>
-                                        <div style="flex:1;min-width:200px;"><label>Ảnh (URL)</label><input
-                                                id="new-p-image">
-                                        </div>
-                                    </div>
-                                    <div style="margin-top:8px;display:flex;gap:8px;">
-                                        <button type="submit">Thêm</button>
-                                        <button type="button" class="ghost"
-                                            onclick="document.getElementById('admin-new-product-form').reset()">Hủy</button>
-                                    </div>
-                                </form>
-                            </div>
-
-                            <hr style="margin:12px 0">
-
-                            <div id="admin-edit-form" style="display:none;">
-                                <h4>Chỉnh sửa sản phẩm</h4>
-                                <form id="admin-product-form" onsubmit="event.preventDefault(); saveAdminProductEdit()">
-                                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                                        <input type="hidden" id="ad-p-id">
-                                        <div style="flex:1;min-width:160px;"><label>Tên</label><input id="ad-p-name"
-                                                required>
-                                        </div>
-                                        <div style="flex:1;min-width:160px;"><label>Thương hiệu</label><input
-                                                id="ad-p-brand">
-                                        </div>
-                                        <div style="flex:1;min-width:160px;"><label>Loại</label><input
-                                                id="ad-p-category"></div>
-                                        <div style="flex:1;min-width:120px;"><label>Giá</label><input id="ad-p-price"
-                                                type="number"></div>
-                                        <div style="flex:1;min-width:120px;"><label>Số lượng</label><input
-                                                id="ad-p-stock" type="number"></div>
-                                        <div style="flex:1;min-width:200px;"><label>Ảnh (URL)</label><input
-                                                id="ad-p-image">
-                                        </div>
-                                    </div>
-                                    <div style="margin-top:8px;display:flex;gap:8px;">
-                                        <button type="submit">Lưu</button>
-                                        <button type="button" class="ghost"
-                                            onclick="document.getElementById('admin-edit-form').style.display='none'">Hủy</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <!-- Tab 3: Giỏ hàng -->
+        <!-- Cart -->
         <div id="cart" class="tab-content" style="display:none;">
             <section class="card">
                 <h2>Giỏ hàng</h2>
-                <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
-                    <label class="muted">Nhập mã người dùng:</label>
-                    <input id="cart-user-id" placeholder="VD: 1"
-                        style="width:120px;padding:8px;border-radius:8px;border:1px solid #ccc;">
-                    <button onclick="loadCartForUser()">Tải giỏ</button>
-                </div>
-
                 <div id="cart-list"></div>
-                <div style="margin-top:8px;display:flex;gap:8px;">
-                    <button onclick="checkoutCurrentCart()">Thanh toán giỏ</button>
-                    <button class="ghost" onclick="clearCurrentCart()">Xóa giỏ</button>
-                </div>
             </section>
         </div>
 
-        <!-- Tab 4: Đơn hàng -->
+        <!-- Orders -->
         <div id="orders" class="tab-content" style="display:none;">
             <section class="card">
                 <h2>Đơn hàng</h2>
@@ -708,6 +2095,57 @@
             </section>
         </div>
 
+        <!-- Profile -->
+        <div id="profile" class="tab-content" style="display:none;">
+            <section class="card">
+                <!-- profile content rendered by JS -->
+            </section>
+        </div>
+
+        <!-- Admin: Dashboard -->
+
+        <div id="admin-dashboard" class="tab-content" style="display:none;">
+            <section class="card"></section>
+        </div>
+
+        <!-- Admin: Products (admin-products) -->
+        <div id="admin-products" class="tab-content" style="display:none;">
+            <section class="card"></section>
+        </div>
+        <!-- Admin: Users (admin-users) -->
+        <div id="admin-users" class="tab-content" style="display:none;">
+            <section class="card">
+                <h3>Quản lý Người dùng</h3>
+                <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
+                    <div style="flex:1"></div>
+                    <div style="display:flex;gap:8px">
+                        <button onclick="showAddUserModal('staff')">Thêm nhân viên</button>
+                        <button onclick="showAddUserModal('admin')">Thêm admin</button>
+                    </div>
+                </div>
+                <div id="admin-users-list"></div>
+            </section>
+        </div>
+        <!-- Admin: Customers -->
+        <div id="admin-customers" class="tab-content" style="display:none;">
+            <section class="card"></section>
+        </div>
+
+        <!-- Admin: Customers -->
+        <div id="admin-customers" class="tab-content" style="display:none;">
+            <section class="card"></section>
+        </div>
+
+        <!-- Admin: Suppliers -->
+        <div id="admin-suppliers" class="tab-content" style="display:none;">
+            <section class="card"></section>
+        </div>
+
+        <!-- Admin: Revenue -->
+        <div id="admin-revenue" class="tab-content" style="display:none;">
+            <section class="card"></section>
+        </div>
+
         <div class="grid">
             <!-- kept empty to allow the layout to resemble previous structure -->
         </div>
@@ -718,609 +2156,6 @@
     <div class="modal" id="modal">
         <div class="panel" id="modal-panel"></div>
     </div>
-
-    <script>
-        // ---------- SAMPLE DATA & STATE ----------
-        let products = [
-            {
-                id: 1,
-                name: "Áo thun nam",
-                brand: "Louis Vuitton",
-                category: "Thời trang",
-                price: 120000,
-                stock: 10,
-                image: "ao_thun.jpg",
-                description: "Áo thun nam cao cấp, chất vải mềm mịn, thoáng mát, phù hợp cho mùa hè.",
-                size: "M, L, XL",
-                color: "Đen",
-                material: "Cotton"
-            },
-            {
-                id: 2,
-                name: "Quần jean",
-                brand: "Routine",
-                category: "Thời trang",
-                price: 350000,
-                stock: 8,
-                image: "quan_jean.jpg",
-                description: "Quần jean form slim-fit năng động, dễ phối đồ.",
-                size: "28, 30, 32, 34",
-                color: "Xanh đậm",
-                material: "Denim"
-            },
-            {
-                id: 3,
-                name: "Giày sneaker",
-                brand: "MLB",
-                category: "Giày dép",
-                price: 450000,
-                stock: 5,
-                image: "giay_sneaker.jpg",
-                description: "Giày sneaker trẻ trung, đế cao su bền chắc, phù hợp cả nam và nữ.",
-                size: "38-43",
-                color: "Trắng",
-                material: "Da tổng hợp"
-            },
-            {
-                id: 4,
-                name: "Mũ lưỡi trai",
-                brand: "MLB",
-                category: "Phụ kiện",
-                price: 150000,
-                stock: 12,
-                image: "mu_luoi_trai.jpg",
-                description: "Mũ lưỡi trai MLB phong cách thể thao, có thể điều chỉnh kích cỡ.",
-                size: "Free size",
-                color: "Đen",
-                material: "Vải cotton"
-            },
-            {
-                id: 5,
-                name: "Áo khoác nam",
-                brand: "Zara",
-                category: "Thời trang",
-                price: 550000,
-                stock: 7,
-                image: "ao_khoac.jpg",
-                description: "Áo khoác thời trang nam chống gió, giữ ấm tốt.",
-                size: "M, L, XL",
-                color: "Xanh rêu",
-                material: "Polyester"
-            },
-            {
-                id: 6,
-                name: "Túi xách tay",
-                brand: "Gucci",
-                category: "Phụ kiện",
-                price: 950000,
-                stock: 3,
-                image: "tui_xach.jpg",
-                description: "Túi xách nữ thời trang Gucci sang trọng, phù hợp đi chơi và dự tiệc.",
-                size: "25x30cm",
-                color: "Nâu",
-                material: "Da thật"
-            },
-            {
-                id: 7,
-                name: "Đồng hồ nam",
-                brand: "Tissot",
-                category: "Phụ kiện",
-                price: 1250000,
-                stock: 4,
-                image: "dong_ho.jpg",
-                description: "Đồng hồ Tissot nam dây da, chống nước, thiết kế sang trọng.",
-                size: "Đường kính 42mm",
-                color: "Bạc",
-                material: "Thép không gỉ & da"
-            },
-            {
-                id: 8,
-                name: "Tai nghe Bluetooth",
-                brand: "Sony",
-                category: "Điện tử",
-                price: 780000,
-                stock: 6,
-                image: "tai_nghe.jpg",
-                description: "Tai nghe Bluetooth chống ồn, pin 12h, âm thanh trung thực.",
-                size: "Nhỏ gọn",
-                color: "Đen",
-                material: "Nhựa cao cấp"
-            },
-            {
-                id: 9,
-                name: "Balo laptop",
-                brand: "Xiaomi",
-                category: "Phụ kiện",
-                price: 320000,
-                stock: 9,
-                image: "balo.jpg",
-                description: "Balo chống nước, có ngăn riêng cho laptop 15 inch.",
-                size: "45x30x15cm",
-                color: "Xám",
-                material: "Vải Oxford"
-            },
-            {
-                id: 10,
-                name: "Áo sơ mi nữ",
-                brand: "An Phước",
-                category: "Thời trang",
-                price: 250000,
-                stock: 15,
-                image: "ao_somi.jpg",
-                description: "Áo sơ mi nữ công sở thanh lịch, vải mềm, dễ ủi.",
-                size: "S, M, L",
-                color: "Trắng",
-                material: "Cotton lụa"
-            }
-        ];
-
-
-        // customers, orders, carts
-        let customers = [
-            { id: 1, name: 'Nguyễn Văn A', email: 'a@example.com', phone: '0900000001' },
-            { id: 2, name: 'Trần Thị B', email: 'b@example.com', phone: '0900000002' }
-        ];
-        let customerId = Math.max(...customers.map(c => c.id)) || 0;
-
-        let orders = [
-            // sample: { id:1, customerId:1, productId:2, qty:1, total:350000, date:'2025-10-01' }
-        ];
-        let orderId = orders.length ? Math.max(...orders.map(o => o.id)) : 0;
-
-        // carts: map customerId -> [{productId, qty}]
-        let carts = {}; // e.g. { '1': [{productId:2, qty:1}] }
-
-        // helper
-        function $(id) { return document.getElementById(id) }
-        function formatCurrency(n) { return Number(n).toLocaleString('vi-VN') }
-
-        // ---------- PRODUCTS RENDER (catalog only) ----------
-        function renderProducts() {
-            const grid = $('product-grid');
-            grid.innerHTML = '';
-            const q = $('search-products').value.toLowerCase();
-            const min = Number($('min-price').value) || 0;
-            const max = Number($('max-price').value) || Infinity;
-            const category = $('filter-category').value;
-            const brand = $('filter-brand').value;
-
-            const list = products.filter(p => {
-                const matchesQuery = p.name.toLowerCase().includes(q) || (p.category && p.category.toLowerCase().includes(q)) || (p.brand && p.brand.toLowerCase().includes(q));
-                const matchPrice = p.price >= min && p.price <= max;
-                const matchCategory = !category || p.category === category;
-                const matchBrand = !brand || p.brand === brand;
-                return matchesQuery && matchPrice && matchCategory && matchBrand;
-
-            });
-
-
-            list.forEach(p => {
-                const card = document.createElement('div');
-                card.className = 'product-card';
-                card.innerHTML = `
-      <img src="${p.image || 'https://via.placeholder.com/150'}" alt="${p.name}">
-      <h4>${p.name}</h4>
-      <div class="price">${formatCurrency(p.price)} VNĐ</div>
-      <div class="brand">${p.brand || ''}</div>
-      <div class="muted">${p.category || ''}</div>
-      <div style="margin-top:6px;font-size:13px;color:#2d6a4f;">Tồn kho: ${p.stock}</div>
-        <div style="margin-top:8px;display:flex;gap:6px;justify-content:center;">
-        <button style="flex: 1;" onclick="showProductInfo(${p.id})">Thông tin</button>
-        <button style="flex: 1;" onclick="showPurchaseOptions(${p.id}, 'cart')">Thêm vào giỏ</button>
-        <button style="flex: 1; background:#0ea5a4;color:white" onclick="showPurchaseOptions(${p.id}, 'buy')">Mua</button>
-      </div>
-    `;
-                grid.appendChild(card);
-            });
-            $('products-count').textContent = list.length;
-            $('stat-products').textContent = products.length;
-            updateSummary();
-        }
-
-        function applyFilters() { renderProducts(); }
-        function resetFilters() { $('min-price').value = ''; $('max-price').value = ''; $('filter-category').value = ''; $('filter-brand').value = ''; renderProducts(); }
-
-        // ---------- PRODUCT INFO / CART / BUY ----------
-        function showModal(html) { $('modal-panel').innerHTML = html; $('modal').style.display = 'flex'; }
-        function closeModal() { $('modal').style.display = 'none'; }
-        document.getElementById('modal')?.addEventListener('click', function (e) { if (e.target.id === 'modal') closeModal(); });
-
-        function showProductInfo(id) {
-            const p = products.find(x => x.id === id); if (!p) return; showModal(`
-            <h3>${p.name}</h3>
-            <img src="${p.image || 'https://via.placeholder.com/300'}" style="width:100%;height:200px;object-fit:cover;border-radius:6px">
-            <p><strong>Mã sản phẩm:</strong> ${p.id}</p>
-            <p><strong>Thương hiệu:</strong> ${p.brand || '-'}</p>
-            <p><strong>Loại:</strong> ${p.category || '-'}</p>
-            <p><strong>Giá:</strong> ${formatCurrency(p.price)} VNĐ</p>
-            <p><strong>Tồn kho:</strong> ${p.stock}</p>
-            <p><strong>Mô tả:</strong> ${p.description || 'Chưa có mô tả'}</p>
-            <p><strong>Kích cỡ:</strong> ${p.size || 'Tùy chọn'}</p>
-            <p><strong>Màu sắc:</strong> ${p.color || 'Đa dạng'}</p>
-            <p><strong>Chất liệu:</strong> ${p.material || 'Không rõ'}</p>
-            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
-              <button onclick="closeModal()">Đóng</button>
-            </div>
-        `);
-        }
-
-        function promptAddToCart(productId) {
-            // hỏi số lượng trước khi thêm
-            let userId = $('current-user-id').value.trim() || prompt('Nhập mã người dùng để thêm vào giỏ (số):');
-            if (userId === null) return;
-            userId = String(userId).trim();
-            if (!userId) return alert('Cần mã người dùng');
-            ensureCustomerExists(userId);
-            const qtyStr = prompt('Số lượng muốn thêm (mặc định 1):', '1');
-            if (qtyStr === null) return;
-            const qty = Math.max(1, Number(qtyStr) || 1);
-            const added = addToCart(userId, productId, qty);
-            if (added) alert('Đã thêm vào giỏ của người dùng ' + userId);
-        }
-
-        function promptBuyNow(productId) {
-            let userId = $('current-user-id').value.trim() || prompt('Nhập mã người dùng để mua (số):');
-            if (userId === null) return;
-            userId = String(userId).trim();
-            if (!userId) return alert('Cần mã người dùng');
-            ensureCustomerExists(userId);
-            const qtyStr = prompt('Số lượng (mặc định 1):', '1');
-            if (qtyStr === null) return;
-            const qty = Math.max(1, Number(qtyStr) || 1);
-            const p = products.find(x => x.id === productId);
-            if (!p) return alert('Sản phẩm không tồn tại');
-            if (p.stock < qty) return alert('Không đủ tồn kho. Chỉ còn ' + p.stock + '.');
-            // đặt ngay — cập nhật tồn kho và tạo đơn
-            p.stock -= qty;
-            orderId++;
-            const total = p.price * qty;
-            const date = new Date().toISOString().slice(0, 10);
-            orders.push({ id: orderId, customerId: Number(userId), productId, qty, total, date });
-            updateSummary(); renderProducts(); renderOrders();
-            alert('Mua thành công — đơn hàng ID: ' + orderId);
-        }
-
-        function ensureCustomerExists(userId) {
-            // userId is string — try convert to int id
-            const idNum = Number(userId);
-            if (!idNum || !Number.isFinite(idNum)) {
-                // create a numeric id automatically
-                customerId++;
-                customers.push({ id: customerId, name: `Khách ${customerId}` });
-                return String(customerId);
-            }
-            const found = customers.find(c => c.id === idNum);
-            if (!found) {
-                customers.push({ id: idNum, name: `Khách ${idNum}` });
-                if (idNum > customerId) customerId = idNum;
-            }
-            return String(idNum);
-        }
-        // Hàm mới để hiển thị modal chọn Size và Số lượng
-        // Hàm mới để hiển thị modal chọn Size và Số lượng
-        // Hàm mới để hiển thị modal chọn Size và Số lượng
-        function showPurchaseOptions(productId, action) {
-            const p = products.find(x => x.id === productId);
-            if (!p) return alert("Không tìm thấy sản phẩm!");
-
-            // 1. Xử lý options cho Size
-            const sizes = p.size ? p.size.split(',').map(s => s.trim()) : ['One Size'];
-            let sizeOptionsHtml = '';
-            let sizeFieldStyle = 'flex: 1;'; // Mặc định cho flex
-
-            if (sizes.length > 0 && sizes[0] !== 'One Size' && sizes[0] !== 'Free size') {
-                const selectOptions = sizes.map(s => `<option value="${s}">${s}</option>`).join('');
-                sizeOptionsHtml = `
-        <div class="field" style="${sizeFieldStyle}">
-          <label for="modal-size" style="display: block; margin-bottom: 4px; font-weight: 500;">Chọn Size:</label>
-          <select id="modal-size" style="width:100%; padding: 8px; border-radius: 8px; border: 1px solid #e6e9f2; box-sizing: border-box;">
-            ${selectOptions}
-          </select>
-        </div>`;
-            } else {
-                // Nếu không có size, ẩn field size
-                sizeOptionsHtml = `<input type="hidden" id="modal-size" value="${sizes[0]}">`;
-                sizeFieldStyle = 'display: none;'; // Ẩn hẳn ô size
-                /* qtyFieldStyle = 'width: 100%';*/
-            }
-
-            // 2. Tạo HTML cho Modal
-            const modal = document.createElement("div");
-            modal.className = "modal-overlay";
-
-            const actionText = (action === 'cart') ? 'Thêm vào giỏ' : 'Mua ngay';
-
-            modal.innerHTML = `
-        <div class="modal-content" style="max-width: 400px; padding: 20px;">
-          <h3 style="margin-top:0; color: var(--text-color);">${p.name}</h3>
-          <p style="font-weight: 600;">Giá: <span style="color: var(--accent);">${formatCurrency(p.price)} VNĐ</span> / sản phẩm</p>
-          <p style="font-size:14px; color: #777; margin-bottom: 15px;">Tồn kho: ${p.stock}</p>
-          <hr style="margin:12px 0; border: none; border-top: 1px solid #eee;">
-          
-          <form onsubmit="event.preventDefault(); handlePurchaseConfirm(${p.id}, '${action}');">
-            <div style="display:flex; gap: 12px; align-items: flex-start; margin-bottom: 20px;">
-              ${sizeOptionsHtml}
-              <div class="field" style="flex: 1; ${sizeFieldStyle === 'display: none;' ? 'width: 100%;' : ''}">
-                <label for="modal-qty" style="display: block; margin-bottom: 4px; font-weight: 500;">Số lượng:</label>
-                <input id="modal-qty" type="number" value="1" min="1" max="${p.stock}" required 
-     style="width:80px; padding: 8px; border-radius: 8px; border: 1px solid #e6e9f2; text-align:center; box-sizing: border-box;">
-
-              </div>
-            </div>
-            <div style="margin-top:20px; display:flex; justify-content:flex-end; gap: 10px;">
-              <button type="button" class="ghost" onclick="this.closest('.modal-overlay').remove()" 
-                    style="padding: 10px 18px; border-radius: 8px; font-size: 14px;">Hủy</button>
-              <button type="submit" style="background: var(--accent); color: white; padding: 10px 18px; border-radius: 8px; font-size: 14px;">${actionText}</button>
-            </div>
-          </form>
-        </div>
-        `;
-            document.body.appendChild(modal);
-        }
-
-        // Hàm mới để xử lý xác nhận từ Modal
-        function handlePurchaseConfirm(productId, action) {
-            const qty = Number(document.getElementById('modal-qty').value);
-            const sizeEl = document.getElementById('modal-size');
-            const size = sizeEl ? sizeEl.value : 'One Size'; // Lấy size đã chọn
-
-            // Lấy User ID từ ô input cố định
-            let userId = $('current-user-id').value.trim();
-            if (!userId) {
-                alert('Vui lòng nhập "Mã người dùng" (ô bên cạnh ô tìm kiếm) trước khi thêm/mua.');
-                return;
-            }
-            userId = ensureCustomerExists(userId); // Đảm bảo khách hàng tồn tại
-
-            // Kiểm tra tồn kho
-            const p = products.find(x => x.id === productId);
-            if (!p) return alert('Sản phẩm không tồn tại');
-            if (p.stock < qty) return alert('Không đủ tồn kho. Chỉ còn ' + p.stock + '.');
-
-            // Gọi logic
-            if (action === 'cart') {
-                const added = addToCart(userId, productId, qty, size); // Cập nhật addToCart
-                if (added) alert('Đã thêm vào giỏ của người dùng ' + userId);
-            } else if (action === 'buy') {
-                buyNow(userId, productId, qty, size); // Cập nhật buyNow
-                alert('Mua thành công!');
-            }
-
-            // Đóng modal
-            document.querySelector('.modal-overlay').remove();
-        }
-
-        function addToCart(userId, productId, qty = 1, size = 'One Size') {
-            const p = products.find(x => x.id === productId);
-            if (!p) { alert('Sản phẩm không tồn tại'); return false; }
-
-            if (!carts[userId]) carts[userId] = [];
-            // Kiểm tra sản phẩm có CÙNG size đã tồn tại chưa
-            const existing = carts[userId].find(it => it.productId === productId && it.size === size);
-
-            const inCartQty = existing ? existing.qty : 0;
-            const totalDesired = inCartQty + qty;
-
-            if (totalDesired > p.stock) {
-                if (p.stock - inCartQty <= 0) {
-                    alert('Không thể thêm — đã hết hàng hoặc bạn đã có tối đa trong giỏ.');
-                    return false;
-                }
-                alert('Chỉ còn ' + (p.stock - inCartQty) + ' sản phẩm khả dụng. Vui lòng giảm số lượng.');
-                return false;
-            }
-
-            if (existing) {
-                existing.qty = totalDesired;
-            } else {
-                carts[userId].push({ productId, qty, size }); // Thêm size vào đối tượng giỏ hàng
-            }
-            return true;
-        }
-
-        function buyNow(userId, productId, qty, size = 'One Size') {
-            const p = products.find(x => x.id === productId);
-            if (!p) return alert('Sản phẩm không tồn tại');
-            if (p.stock < qty) return alert('Không đủ tồn kho');
-            p.stock -= qty;
-            orderId++;
-            const total = p.price * qty;
-            const date = new Date().toISOString().slice(0, 10);
-            orders.push({ id: orderId, customerId: Number(userId), productId, qty, total, date, size }); // Thêm size vào đơn hàng
-            updateSummary(); renderProducts(); renderOrders();
-            // alert('Mua thành công — đơn hàng ID: ' + orderId); // Tắt thông báo này vì đã có ở handlePurchaseConfirm
-        }
-
-        // ---------- CART TAB ----------
-        let currentCartUser = null;
-        function loadCartForUser() {
-            const uid = $('cart-user-id').value.trim();
-            if (!uid) return alert('Nhập mã người dùng để tải giỏ');
-            currentCartUser = String(uid);
-            ensureCustomerExists(currentCartUser);
-            renderCartForUser(currentCartUser);
-        }
-
-        function renderCartForUser(userId) {
-            const list = carts[userId] || [];
-            const cont = $('cart-list');
-            cont.innerHTML = '';
-            if (list.length === 0) { cont.innerHTML = '<div>Giỏ rỗng</div>'; return; }
-
-            const tbl = document.createElement('table');
-            tbl.style.width = '100%';
-            tbl.innerHTML = `<thead>
-        <tr>
-            <th>Mã SP</th>
-            <th>Sản phẩm</th>
-            <th>Size</th>
-            <th>Số lượng</th>
-            <th>Đơn giá</th>
-            <th>Số tiền</th>
-            <th>Thao tác</th>
-        </tr>
-    </thead><tbody></tbody>`;
-            const tbody = tbl.querySelector('tbody');
-
-            list.forEach((it) => {
-                const p = products.find(x => x.id === it.productId) || { name: '[không xác định]', price: 0 };
-                const tr = document.createElement('tr');
-                const sizeEsc = (it.size || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                tr.innerHTML = `
-            <td>${p.id}</td>
-            <td>${p.name}</td>
-            <td>${it.size || '-'}</td>
-            <td>
-                <input value="${it.qty}" style="width:60px" 
-                    onchange="changeCartQty('${userId}', ${it.productId}, '${sizeEsc}', this.value)">
-            </td>
-            <td>${formatCurrency(p.price)}</td>
-            <td>${formatCurrency(p.price * it.qty)}</td>
-            <td>
-                <button onclick="removeCartItem('${userId}', ${it.productId}, '${sizeEsc}')" 
-                    style="background:#ef4444;color:white">Xóa</button>
-            </td>
-        `;
-                tbody.appendChild(tr);
-            });
-
-            cont.appendChild(tbl);
-        }
-
-
-        function changeCartQty(userId, productId, size, value) {
-            const list = carts[userId]; if (!list) return;
-            const it = list.find(x => x.productId === productId && String(x.size) === String(size)); // so sánh chính xác cả size
-            if (!it) return;
-            // đảm bảo là số nguyên >=1
-            const newQty = Math.max(1, parseInt(value, 10) || 1);
-            it.qty = newQty;
-            renderCartForUser(userId);
-        }
-
-
-        function checkoutCurrentCart() {
-            if (!currentCartUser) return alert('Tải giỏ cho 1 người dùng trước'); const list = carts[currentCartUser] || []; if (!list.length) return alert('Giỏ rỗng');
-            if (!confirm('Xác nhận thanh toán giỏ?')) return;
-            list.forEach(it => {
-                const p = products.find(x => x.id === it.productId);
-                const qty = Math.min(it.qty, p ? p.stock + it.qty : it.qty); // allow since we haven't reserved stock; here we simply check
-                if (p && p.stock >= it.qty) { p.stock -= it.qty; }
-                orderId++;
-                const total = (p ? p.price : 0) * it.qty;
-                const date = new Date().toISOString().slice(0, 10);
-                orders.push({ id: orderId, customerId: Number(currentCartUser), productId: it.productId, qty: it.qty, total, date, size: it.size });
-            });
-            // clear cart
-            carts[currentCartUser] = [];
-            renderCartForUser(currentCartUser);
-            updateSummary(); renderProducts(); renderOrders();
-            alert('Thanh toán thành công');
-        }
-
-        function clearCurrentCart() { if (!currentCartUser) return alert('Tải giỏ trước'); if (!confirm('Xóa toàn bộ giỏ?')) return; carts[currentCartUser] = []; renderCartForUser(currentCartUser); }
-
-        // ---------- ORDERS RENDER ----------
-        function renderOrders() {
-            const tbody = $('orders-table').querySelector('tbody'); tbody.innerHTML = '';
-            const q = $('search-orders').value.toLowerCase();
-            const list = orders.filter(o => {
-                const c = (customers.find(x => x.id === o.customerId)?.name || '').toLowerCase();
-                const p = (products.find(x => x.id === o.productId)?.name || '').toLowerCase();
-                return c.includes(q) || p.includes(q) || String(o.customerId).includes(q) || String(o.id) === q;
-            });
-            list.forEach(o => {
-                const customer = customers.find(c => c.id === o.customerId) || { name: '[không xác định]' };
-                const product = products.find(p => p.id === o.productId) || { name: '[không xác định]', price: 0 };
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${o.id}</td><td>${customer.name} (id:${o.customerId})</td><td>${product.name}</td><td>${o.size || '-'}</td><td>${o.qty}</td><td>${formatCurrency(product.price)}</td><td>${formatCurrency(o.total)}</td><td>${o.date}</td><td><button onclick="deleteOrder(${o.id})" style=\"background:#ef4444;color:white\">Xóa</button></td>`;
-                tbody.appendChild(tr);
-            });
-            $('stat-orders').textContent = orders.length;
-            updateSummary();
-        }
-
-        function deleteOrder(id) { if (!confirm('Xóa đơn?')) return; const idx = orders.findIndex(x => x.id === id); if (idx >= 0) orders.splice(idx, 1); renderOrders(); updateSummary(); }
-
-        // ---------- ADMIN EDIT TAB ----------
-        const ADMIN_PASSWORD = 'admin123';
-        $('admin-check-btn').addEventListener('click', () => {
-            const pass = $('admin-pass').value;
-            if (pass === ADMIN_PASSWORD) { $('admin-panel').style.display = 'block'; alert('Đăng nhập Admin thành công'); renderAdminProductList(); }
-            else alert('Sai mật khẩu');
-        });
-
-        $('search-admin-products').addEventListener('input', renderAdminProductList);
-
-        function renderAdminProductList() {
-            const q = $('search-admin-products').value.toLowerCase();
-            const out = [];
-            products.filter(p => p.name.toLowerCase().includes(q) || p.brand?.toLowerCase().includes(q) || p.category?.toLowerCase().includes(q)).forEach(p => {
-                out.push(`<tr><td>${p.id}</td><td>${p.name}</td><td>${p.brand || '-'}</td><td>${p.category || '-'}</td><td>${formatCurrency(p.price)}</td><td>${p.stock}</td><td><button onclick=\"openAdminEdit(${p.id})\">Sửa</button></td></tr>`);
-            });
-            $('edit-list').innerHTML = out.length ? `<table><thead><tr><th>ID</th><th>Tên</th><th>Thương hiệu</th><th>Loại</th><th>Giá</th><th>Stock</th><th>Thành công</th></tr></thead><tbody>${out.join('')}</tbody></table>` : '<div>Không tìm thấy sản phẩm</div>';
-        }
-
-        function openAdminEdit(id) {
-            const p = products.find(x => x.id === id); if (!p) return;
-            $('admin-edit-form').style.display = 'block'; $('ad-p-id').value = p.id; $('ad-p-name').value = p.name; $('ad-p-brand').value = p.brand || ''; $('ad-p-category').value = p.category || ''; $('ad-p-price').value = p.price; $('ad-p-stock').value = p.stock; $('ad-p-image').value = p.image || ''; window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-        function saveAdminProductEdit() {
-            const id = Number($('ad-p-id').value); const p = products.find(x => x.id === id); if (!p) return alert('Sản phẩm không tồn tại');
-            p.name = $('ad-p-name').value.trim(); p.brand = $('ad-p-brand').value.trim(); p.category = $('ad-p-category').value.trim(); p.price = Number($('ad-p-price').value) || 0; p.stock = Number($('ad-p-stock').value) || 0; p.image = $('ad-p-image').value.trim();
-            alert('Đã lưu'); $('admin-edit-form').style.display = 'none'; renderAdminProductList(); renderProducts(); renderOrders(); updateSummary();
-        }
-        function saveNewProduct() {
-            const name = $('new-p-name').value.trim();
-            const brand = $('new-p-brand').value.trim();
-            const category = $('new-p-category').value.trim();
-            const price = Number($('new-p-price').value);
-            const stock = Number($('new-p-stock').value);
-            const image = $('new-p-image').value.trim();
-
-            if (!name) return alert('Vui lòng nhập tên sản phẩm');
-            if (!category) return alert('Vui lòng nhập loại sản phẩm');
-            if (isNaN(price) || price < 0) return alert('Vui lòng nhập giá hợp lệ');
-            if (isNaN(stock) || stock < 0) return alert('Vui lòng nhập số lượng hợp lệ');
-
-            const newId = products.length ? Math.max(...products.map(p => p.id)) + 1 : 1;
-            products.push({ id: newId, name, brand, category, price, stock, image });
-            // reset form
-            document.getElementById('admin-new-product-form').reset();
-            // update views
-            renderProducts(); renderAdminProductList(); updateOrderProductOptions(); updateSummary();
-            alert('Đã thêm sản phẩm mới: ' + name);
-        }
-
-        // ---------- SUMMARY ----------
-        function updateSummary() {
-            const revenue = orders.reduce((s, o) => s + Number(o.total), 0);
-            $('stat-revenue').textContent = formatCurrency(revenue);
-            $('stat-customers').textContent = customers.length;
-            $('stat-products').textContent = products.length;
-        }
-
-        // ---------- INIT ----------
-        // tabs behavior
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                const tab = btn.dataset.tab;
-                document.querySelectorAll('.tab-content').forEach(tc => tc.style.display = 'none');
-                document.getElementById(tab).style.display = 'block';
-                // small refresh
-                if (tab === 'shop') renderProducts();
-                if (tab === 'edit') { /* nothing */ }
-                if (tab === 'cart') { /* nothing */ }
-                if (tab === 'orders') renderOrders();
-            });
-        });
-
-        function init() { renderProducts(); renderOrders(); updateSummary(); }
-        init();
-
-    </script>
 
 </body>
 
